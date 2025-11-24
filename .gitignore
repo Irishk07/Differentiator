@@ -1,0 +1,6 @@
+.vscode/
+build/
+dump/
+dump.html
+tree_prog
+with_tree.txt
