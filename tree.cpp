@@ -11,16 +11,12 @@
 #include "onegin.h"
 
 
-Tree_status TreeCtor(Tree* tree, const char* dump_filename, const char* directory) {
+Tree_status TreeCtor(Tree* tree, const char* html_dump_filename, const char* directory) {
     assert(tree);
-    assert(dump_filename);
+    assert(html_dump_filename);
     assert(directory);
 
     tree->size = 0;
-
-    tree->dump_info.directory = directory;
-
-    tree->dump_info.dump_filename = dump_filename;
 
     return SUCCESS;
 }
@@ -112,54 +108,71 @@ char* NameOfVariable(Differentiator* differentiator, Tree_node* tree_node) {
     return (differentiator->array_with_variables.data)[IndexOfVariable(tree_node)]->name;
 }
 
+const char* IndetifySign(Type_node type_node) {
+    switch(type_node) {
+        case OPERATOR_ADD: return "+";
+        case OPERATOR_SUB: return "-";
+        case OPERATOR_MUL: return "*";
+        case OPERATOR_DIV: return "\\";
+        case OPERATOR_POW: return "^";
+        case NUMBER:
+        case VARIABLE:
+        case WRONG_TYPE:
+        default: break;
+    }
+
+    return NULL;
+}
+
 
 Tree_status TreeHTMLDump(Differentiator* differentiator, Tree* tree, Tree_node* tree_node, int line, const char* file, Type_dump type_dump, Tree_status tree_status) {
-    FILE* dump_file = NULL;
-    if (tree->dump_info.num_dump == 0)
-        dump_file = fopen(tree->dump_info.dump_filename, "w");
+    FILE* html_dump_file = NULL;
+    if (differentiator->dump_info.num_dump == 0)
+        html_dump_file = fopen(differentiator->dump_info.html_dump_filename, "w");
     else
-        dump_file = fopen(tree->dump_info.dump_filename, "a");
-    if (dump_file == NULL)
+        html_dump_file = fopen(differentiator->dump_info.html_dump_filename, "a");
+    if (html_dump_file == NULL)
         TREE_CHECK_AND_RETURN_ERRORS(OPEN_ERROR);
 
-    fprintf(dump_file, "<pre> <font size = \"8\">\n");
+    fprintf(html_dump_file, "<pre> <font size = \"8\">\n");
 
     if (type_dump == USUAL_DUMP)
-        fprintf(dump_file, "<h3> DUMP <font color = green> Tree </font> </h3>\n");
+        fprintf(html_dump_file, "<h3> DUMP <font color = green> Tree </font> </h3>\n");
     
     if (type_dump == ERROR_DUMP) {
-        fprintf(dump_file, "<h3> ERROR_ANSWER DUMP <font color = red> Tree </font> </h3>\n");
+        fprintf(html_dump_file, "<h3> ERROR_ANSWER DUMP <font color = red> Tree </font> </h3>\n");
 
-        PrintErrors(tree_status, dump_file);
+        PrintErrors(tree_status, html_dump_file);
 
         if (tree_status == NULL_POINTER_ON_TREE ||
             tree_status == NULL_POINTER_ON_NODE)
             return tree_status;
     }
 
-    fprintf(dump_file, "Tree {%s: %d}\n", file, line);
+    fprintf(html_dump_file, "Tree {%s: %d}\n", file, line);
 
-    fprintf(dump_file, "Size: %zu\n", tree->size);
+    fprintf(html_dump_file, "Size: %zu\n", tree->size);
 
-    fprintf(dump_file, "Root: %p\n", tree->root);
+    fprintf(html_dump_file, "Root: %p\n", tree->root);
 
     TREE_CHECK_AND_RETURN_ERRORS(GenerateGraph(differentiator, tree, tree_node));
 
     char command[MAX_LEN_NAME] = {};
     snprintf(command, MAX_LEN_NAME, "dot %s/graphes/graph%d.txt -T png -o %s/images/image%d.png", 
-                                     tree->dump_info.directory, tree->dump_info.num_dump, tree->dump_info.directory, tree->dump_info.num_dump);
+                                     differentiator->dump_info.directory, differentiator->dump_info.num_dump, 
+                                     differentiator->dump_info.directory, differentiator->dump_info.num_dump);
     
     if (system((const char*)command) != 0)
-        TREE_CHECK_AND_RETURN_ERRORS(EXECUTION_FAILED,      fprintf(dump_file, "Error with create image:(\n"));
+        TREE_CHECK_AND_RETURN_ERRORS(EXECUTION_FAILED,      fprintf(html_dump_file, "Error with create image:(\n"));
 
-    fprintf(dump_file, "\n");
-    fprintf(dump_file, "<img src = %s/images/image%d.png width = 700px>", tree->dump_info.directory, tree->dump_info.num_dump);
+    fprintf(html_dump_file, "\n");
+    fprintf(html_dump_file, "<img src = %s/images/image%d.png width = 700px>", differentiator->dump_info.directory, differentiator->dump_info.num_dump);
 
-    fprintf(dump_file, "\n\n");
+    fprintf(html_dump_file, "\n\n");
 
-    tree->dump_info.num_dump++;
+    differentiator->dump_info.num_dump++;
 
-    if (fclose(dump_file) == EOF)
+    if (fclose(html_dump_file) == EOF)
         TREE_CHECK_AND_RETURN_ERRORS(CLOSE_ERROR,      perror("Error is: "));
 
     return SUCCESS;
@@ -167,7 +180,7 @@ Tree_status TreeHTMLDump(Differentiator* differentiator, Tree* tree, Tree_node* 
 
 Tree_status GenerateGraph(Differentiator* differentiator, Tree* tree, Tree_node* tree_node) {
     char filename_graph[MAX_LEN_NAME] = {};
-    snprintf(filename_graph, MAX_LEN_NAME, "%s/graphes/graph%d.txt", tree->dump_info.directory, tree->dump_info.num_dump);
+    snprintf(filename_graph, MAX_LEN_NAME, "%s/graphes/graph%d.txt", differentiator->dump_info.directory, differentiator->dump_info.num_dump);
 
     FILE* graph = fopen(filename_graph, "w");
     if (graph == NULL)
@@ -199,15 +212,17 @@ void PrintNodeToDot(Differentiator* differentiator, Tree* tree, FILE *file, Tree
         fprintf(file, "    node_%p [label=\"{%p | type = Number | value = %lg | parent = %p | left = %p | right = %p}\"];\n", 
                       (void *)tree_node, tree_node, tree_node->value.number, tree_node->parent, tree_node->left_node, tree_node->right_node);
     }    
-    else if (tree_node->type == OPERATOR) {
-        fprintf(file, "    node_%p [label=\"{%p | type = Operator | value = %s | parent = %p | left = %p | right = %p}\"];\n", 
-                      (void *)tree_node, tree_node, tree_node->value.operators, tree_node->parent, tree_node->left_node, tree_node->right_node);
-    }    
+
     else if (tree_node->type == VARIABLE) {
         fprintf(file, "    node_%p [label=\"{%p | type = Variable | value = %s (%lg) | parent = %p | left = %p | right = %p}\"];\n", 
                       (void *)tree_node, tree_node, NameOfVariable(differentiator, tree_node), ValueOfVariable(differentiator, tree_node), 
                       tree_node->parent, tree_node->left_node, tree_node->right_node);
     }
+
+    else if (tree_node->type != WRONG_TYPE) {
+        fprintf(file, "    node_%p [label=\"{%p | type = Operator | value = %s | parent = %p | left = %p | right = %p}\"];\n", 
+                      (void *)tree_node, tree_node, IndetifySign(tree_node->type), tree_node->parent, tree_node->left_node, tree_node->right_node);
+    }  
 
 
     if (tree_node->left_node) {

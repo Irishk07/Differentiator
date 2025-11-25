@@ -29,7 +29,7 @@ enum Type_dump {
 };
 
 
-Tree_status TreeCtor(Tree* tree, const char* dump_filename, const char* directory);
+Tree_status TreeCtor(Tree* tree, const char* html_dump_filename, const char* directory);
 
 Tree_status NodeCtor(Tree* tree, Tree_node** new_node);
 
@@ -48,6 +48,8 @@ double ValueOfVariable(Differentiator* differentiator, Tree_node* tree_node);
 char* NameOfVariable(Differentiator* differentiator, Tree_node* tree_node);
 
 size_t IndexOfVariable(Tree_node* tree_node);
+
+const char* IndetifySign(Type_node type_node);
 
 Tree_status TreeHTMLDump(Differentiator* differentiator, Tree* tree, Tree_node* tree_node, int line, const char* file, Type_dump type_dump, Tree_status tree_status);
 

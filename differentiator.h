@@ -16,7 +16,7 @@ const int DEFAULT_VALUE = 666;
 const int CNT_ATTEMPTS  = 5;
 
 
-Tree_status DifferentiatorCtor(Differentiator* differentiator, const char *dump_filename, const char *directory);
+Tree_status DifferentiatorCtor(Differentiator* differentiator, const char* html_dump_filename, const char* tex_dump_filename, const char* directory);
 
 Tree_status UploadTree(Differentiator* differentiator);
 
@@ -26,9 +26,7 @@ Tree_status ReadNode(Differentiator* differentiator, Tree_node** tree_node, char
 
 Type_node FindOutType(Differentiator* differentiator, char* buffer, type_t* value);
 
-Status_of_finding ItIsOperator(char* buffer, type_t* value);
-
-Type_operators IndetifySign(char* sign);
+Type_node ItIsOperator(char* buffer, type_t* value);
 
 Status_of_finding ItIsNumber(char* buffer, type_t* value);
 
@@ -44,6 +42,12 @@ Tree_status CalculateValueOfExample(Differentiator* differentiator);
 Tree_status FillValueOfVariables(Differentiator* differentiator, size_t index_of_variable);
 
 double Calculating(Differentiator* differentiator, Tree_node* tree_node);
+
+Tree_status TreeTexDump(Differentiator* differentiator, Tree* tree);
+
+void PrintExpressionToTex(Differentiator* differentiator, Tree_node* tree_node, FILE* tex_dump_file, Prioritets parent_prioritet);
+
+Prioritets GetPrioritet(Tree_node* tree_node);
 
 Tree_status DifferentiatorDtor(Differentiator* differentiator);
 

@@ -5,14 +5,17 @@
 int main(int, char** argv) {
     Differentiator differentiator = {};
 
-    const char* dump_filename = argv[1];
-    const char* directory     = argv[2];
+    const char* html_dump_filename = argv[1];
+    const char* tex_dump_filename  = argv[2];
+    const char* directory          = argv[3];
 
-    DifferentiatorCtor(&differentiator, dump_filename, directory);
+    DifferentiatorCtor(&differentiator, html_dump_filename, tex_dump_filename, directory);
 
     UploadTree(&differentiator);
 
     CalculateValueOfExample(&differentiator);
+
+    TreeTexDump(&differentiator, &differentiator.tree);
 
     DifferentiatorDtor(&differentiator);
 

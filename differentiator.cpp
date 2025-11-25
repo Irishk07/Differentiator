@@ -14,18 +14,22 @@
 #include "tree.h"
 
 
-Tree_status DifferentiatorCtor(Differentiator* differentiator, const char *dump_filename, const char *directory) {
+Tree_status DifferentiatorCtor(Differentiator* differentiator, const char* html_dump_filename, const char* tex_dump_filename, const char *directory) {
     assert(differentiator);
-    assert(dump_filename);
+    assert(html_dump_filename);
     assert(directory);
 
     differentiator->tree = {};
-    TREE_CHECK_AND_RETURN_ERRORS(TreeCtor(&differentiator->tree, dump_filename, directory));
+    TREE_CHECK_AND_RETURN_ERRORS(TreeCtor(&differentiator->tree, html_dump_filename, directory));
     // TREE_CHECK_AND_RETURN_ERRORS(CreateRoot(&akinator->tree, "Bla-bla-bla"));
 
     differentiator->begin_buffer = NULL;
     differentiator->end_buffer   = NULL;
     differentiator->size_buffer  = 0;
+
+    differentiator->dump_info.html_dump_filename = html_dump_filename;
+    differentiator->dump_info.tex_dump_filename  = tex_dump_filename;
+    differentiator->dump_info.directory          = directory;
 
     TREE_CHECK_AND_RETURN_ERRORS(ArrayCtorvariables(&differentiator->array_with_variables, DEFAULT_START_CAPACITY));
 
@@ -77,7 +81,7 @@ Tree_status ReadTree(Differentiator* differentiator, const char* file_with_tree)
 
 #define DUMP_CURRENT_SITUATION(tree, tree_node, current_pos)                  \
     TreeHTMLDump(&tree, tree_node, DUMP_INFO, NOT_ERROR_DUMP);                \
-    dump_file = fopen(tree.dump_info.dump_filename, "a");                     \
+    dump_file = fopen(tree.dump_info.html_dump_filename, "a");                \
     if (dump_file == NULL)                                                    \
         TREE_CHECK_AND_RETURN_ERRORS(OPEN_ERROR);                             \
     fprintf(dump_file, "Current situation: \":%s\"\n", *current_pos);         \
@@ -148,8 +152,9 @@ Tree_status ReadNode(Differentiator* differentiator, Tree_node** tree_node, char
 Type_node FindOutType(Differentiator* differentiator, char* buffer, type_t* value) {
     assert(buffer);
 
-    if (ItIsOperator(buffer, value) == FIND_YES)
-        return OPERATOR;
+    Type_node type_operator = ItIsOperator(buffer, value);
+    if (type_operator != WRONG_TYPE)
+        return type_operator;
 
     if (ItIsNumber(buffer, value) == FIND_YES)
         return NUMBER;
@@ -160,51 +165,29 @@ Type_node FindOutType(Differentiator* differentiator, char* buffer, type_t* valu
     return WRONG_TYPE;
 }
 
-Status_of_finding ItIsOperator(char* buffer, type_t* value) {
+Type_node ItIsOperator(char* buffer, type_t* value) {
     assert(buffer);
 
-    Type_operators cur_operator = IndetifySign(buffer);
+    Type_node type_node = WRONG_TYPE;
 
-    if (cur_operator == WRONG_OPERATOR)
-        return FIND_NO;
+    if (strcmp(buffer, "+") == 0)
+        type_node = OPERATOR_ADD;
 
-    if (cur_operator == OPERATOR_ADD)
-        value->operators = strdup("+");
+    else if (strcmp(buffer, "-") == 0)
+        type_node = OPERATOR_SUB;
 
-    if (cur_operator == OPERATOR_SUB)
-        value->operators = strdup("-");
+    else if (strcmp(buffer, "*") == 0)
+        type_node = OPERATOR_MUL;
 
-    if (cur_operator == OPERATOR_MUL)
-        value->operators = strdup("*");
+    else if (strcmp(buffer, "\\") == 0)
+        type_node = OPERATOR_DIV;
 
-    if (cur_operator == OPERATOR_DIV)
-        value->operators = strdup("\\");
+    else if (strcmp(buffer, "^") == 0)
+        type_node = OPERATOR_POW;
 
-    if (cur_operator == OPERATOR_POW)
-        value->operators = strdup("^");
+    value->operators = type_node;
 
-    return FIND_YES;
-}
-
-Type_operators IndetifySign(char* sign) {
-    assert(sign);
-
-    if (strcmp(sign, "+") == 0)
-        return OPERATOR_ADD;
-
-    if (strcmp(sign, "-") == 0)
-        return OPERATOR_SUB;
-
-    if (strcmp(sign, "*") == 0)
-        return OPERATOR_MUL;
-
-    if (strcmp(sign, "\\") == 0)
-        return OPERATOR_DIV;
-
-    if (strcmp(sign, "^") == 0)
-        return OPERATOR_POW;
-
-    return WRONG_OPERATOR;
+    return type_node;
 }
 
 Status_of_finding ItIsNumber(char* buffer, type_t* value) {
@@ -257,11 +240,12 @@ Tree_status FillNodeInfo(Tree_node* tree_node, Type_node type, type_t value,
     if (type == NUMBER)
         tree_node->value.number = value.number;
 
-    if (type == OPERATOR)
-        tree_node->value.operators = value.operators;
-
     if (type == VARIABLE)
         tree_node->value.index_variable = value.index_variable;
+
+    // if type == OPERATOR
+    if (type != WRONG_TYPE)
+        tree_node->value.operators = value.operators;
 
     tree_node->type = type;
 
@@ -318,7 +302,7 @@ Tree_status FillValueOfVariables(Differentiator* differentiator, size_t index_of
     return SUCCESS;
 }
 
-#define CALCULATING_OPERATORS(sign) \
+#define CALCULATING_OPERATORS(sign)                                                                                      \
         return Calculating(differentiator, tree_node->left_node) sign Calculating(differentiator, tree_node->right_node);
 
 double Calculating(Differentiator* differentiator, Tree_node* tree_node) {
@@ -330,27 +314,132 @@ double Calculating(Differentiator* differentiator, Tree_node* tree_node) {
             return tree_node->value.number; break;
         case VARIABLE:
             return ValueOfVariable(differentiator, tree_node); break;
-        case OPERATOR:
-            {
-            Type_operators type_operator = IndetifySign(tree_node->value.operators);
-
-            if (type_operator == OPERATOR_ADD)
-               CALCULATING_OPERATORS(ADD);
-            if (type_operator == OPERATOR_SUB)
-               CALCULATING_OPERATORS(SUB);  
-            if (type_operator == OPERATOR_MUL)
-                CALCULATING_OPERATORS(MUL);
-            if (type_operator == OPERATOR_DIV)
-                CALCULATING_OPERATORS(DIV);
-            if (type_operator == OPERATOR_POW)
-                return pow(Calculating(differentiator, tree_node->left_node), Calculating(differentiator, tree_node->right_node));
-
-            break;
-            }
+        case OPERATOR_ADD:
+            CALCULATING_OPERATORS(ADD);
+        case OPERATOR_SUB:
+            CALCULATING_OPERATORS(SUB);  
+        case OPERATOR_MUL:
+            CALCULATING_OPERATORS(MUL);
+        case OPERATOR_DIV:
+            CALCULATING_OPERATORS(DIV);
+        case OPERATOR_POW:
+            return pow(Calculating(differentiator, tree_node->left_node), Calculating(differentiator, tree_node->right_node));
         case WRONG_TYPE: return 0.0;
-
         default: break;
     }
+
+    return 0.0;
+}
+
+
+Tree_status TreeTexDump(Differentiator* differentiator, Tree* tree) {
+    FILE* tex_dump_file = NULL;
+    tex_dump_file = fopen(differentiator->dump_info.tex_dump_filename, "w");
+    if (tex_dump_file == NULL)
+        TREE_CHECK_AND_RETURN_ERRORS(OPEN_ERROR);
+
+    fprintf(tex_dump_file, "\\documentclass[12pt]{article}\n");
+    fprintf(tex_dump_file, "\\usepackage[utf8]{inputenc}\n");
+    fprintf(tex_dump_file, "\\usepackage{amsmath}\n");
+    fprintf(tex_dump_file, "\\begin{document}\n");
+    fprintf(tex_dump_file, "\\[\n");
+
+    PrintExpressionToTex(differentiator, tree->root, tex_dump_file, NO_PRIOTITET);
+
+    fprintf(tex_dump_file, "\n\\]\n");
+    fprintf(tex_dump_file, "\\end{document}\n");
+
+    if (fclose(tex_dump_file) == EOF)                                             
+        TREE_CHECK_AND_RETURN_ERRORS(CLOSE_ERROR,      perror("Error is: "));
+
+    char command[MAX_LEN_NAME] = {};
+    snprintf(command, MAX_LEN_NAME, "pdflatex %s", differentiator->dump_info.tex_dump_filename);
+    if (system(command) != 0)
+        TREE_CHECK_AND_RETURN_ERRORS(EXECUTION_FAILED);
+
+    return SUCCESS;
+}
+
+#define PRINT_OPERATOR_TO_TEX(sign)                                                                 \
+{                                                                                                   \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet);   \
+    fprintf(tex_dump_file, sign);                                                                   \
+    PrintExpressionToTex(differentiator, tree_node->right_node, tex_dump_file, current_prioritet);  \
+    break;                                                                                          \
+}                                                                                                   
+
+#define PRINT_DIV_OPERATOR_TO_TEX                                                                   \
+{                                                                                                   \
+    fprintf(tex_dump_file, "\\frac{");                                                              \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet);   \
+    fprintf(tex_dump_file, "}{");                                                                   \
+    PrintExpressionToTex(differentiator, tree_node->right_node, tex_dump_file, current_prioritet);  \
+    fprintf(tex_dump_file, "}");                                                                    \
+    break;                                                                                          \
+}                                                                                       
+
+#define PRINT_POW_OPERATOR_TO_TEX                                                                   \
+{                                                                                                   \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet);   \
+    fprintf(tex_dump_file, "^{");                                                                   \
+    PrintExpressionToTex(differentiator, tree_node->right_node, tex_dump_file, current_prioritet);  \
+    fprintf(tex_dump_file, "}");                                                                    \
+    break;                                                                                          \
+}                                                                                       
+
+void PrintExpressionToTex(Differentiator* differentiator, Tree_node* tree_node, FILE* tex_dump_file, Prioritets parent_prioritet) {
+    Prioritets current_prioritet = GetPrioritet(tree_node);
+
+    if (current_prioritet < parent_prioritet && current_prioritet != NO_PRIOTITET)
+        fprintf(tex_dump_file, "(");
+
+    switch (tree_node->type) {
+        case NUMBER:
+            if (tree_node->value.number < 0)
+                fprintf(tex_dump_file, "(%lg)", tree_node->value.number);
+            else
+                fprintf(tex_dump_file, "%lg", tree_node->value.number);
+            break; 
+        case VARIABLE:
+            fprintf(tex_dump_file, "%lg", ValueOfVariable(differentiator, tree_node));
+            break;
+        case OPERATOR_ADD:
+            PRINT_OPERATOR_TO_TEX(" + ");
+        case OPERATOR_SUB:
+            PRINT_OPERATOR_TO_TEX(" - ");
+        case OPERATOR_MUL:
+            PRINT_OPERATOR_TO_TEX(" \\cdot ");
+        case OPERATOR_DIV:
+            PRINT_DIV_OPERATOR_TO_TEX;
+        case OPERATOR_POW:
+            PRINT_POW_OPERATOR_TO_TEX;
+        case WRONG_TYPE:
+        default:
+            break;
+    }
+
+    if (current_prioritet < parent_prioritet && current_prioritet != NO_PRIOTITET)
+        fprintf(tex_dump_file, ")");
+}
+
+Prioritets GetPrioritet(Tree_node* tree_node) {
+    switch(tree_node->type) {
+        case OPERATOR_ADD:
+        case OPERATOR_SUB:
+            return LOW_PRIOTITET;
+        case OPERATOR_MUL:
+        case OPERATOR_DIV:
+            return MIDDLE_PRIORITET;
+        case OPERATOR_POW:
+            return HIGH_PRIORITET;
+        case NUMBER:
+        case VARIABLE:
+        case WRONG_TYPE:
+        default:
+            return NO_PRIOTITET;
+    }
+
+    return NO_PRIOTITET;
 }
 
 
@@ -373,9 +462,6 @@ Tree_status DifferentiatorDtor(Differentiator* differentiator) {
 void DifferentiatorNodeDtor(Differentiator* differentiator, Tree_node* tree_node) {
     if (tree_node == NULL)
         return;
-
-    if (tree_node->type == OPERATOR)
-        free(tree_node->value.operators);
 
     DifferentiatorNodeDtor(differentiator, tree_node->left_node);
 

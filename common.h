@@ -14,18 +14,21 @@
         }
 
 
-union type_t {
-    double number;
-    int    index_variable;
-    char*  operators;
+enum Type_node {
+    OPERATOR_ADD   = 0,
+    OPERATOR_SUB   = 1,
+    OPERATOR_MUL   = 2,
+    OPERATOR_DIV   = 3,
+    OPERATOR_POW   = 4,
+    VARIABLE       = 5,
+    NUMBER         = 6,
+    WRONG_TYPE     = 7
 };
 
-
-enum Type_node {
-    OPERATOR   = 0,
-    VARIABLE   = 1,
-    NUMBER     = 2,
-    WRONG_TYPE = 3
+union type_t {
+    double    number;
+    int       index_variable;
+    Type_node operators;
 };
 
 enum Tree_status {
@@ -53,13 +56,11 @@ enum Status_of_finding {
     FIND_NO  = 1
 };
 
-enum Type_operators {
-    OPERATOR_ADD   = 0,
-    OPERATOR_SUB   = 1,
-    OPERATOR_MUL   = 2,
-    OPERATOR_DIV   = 3,
-    OPERATOR_POW   = 4,
-    WRONG_OPERATOR = 5
+enum Prioritets {
+    NO_PRIOTITET     = 0,
+    LOW_PRIOTITET    = 1,
+    MIDDLE_PRIORITET = 2,
+    HIGH_PRIORITET   = 3
 };
 
 
@@ -72,7 +73,8 @@ struct Tree_node {
 };
 
 struct Dump_information {
-    const char* dump_filename;
+    const char* html_dump_filename;
+    const char* tex_dump_filename;
     const char* directory;
     int num_dump = 0;
 };
@@ -80,7 +82,6 @@ struct Dump_information {
 struct Tree {
     Tree_node* root;
     size_t size;
-    Dump_information dump_info;
 };
 
 typedef Tree* trees_type_t;
@@ -111,6 +112,7 @@ struct Differentiator {
     size_t size_buffer;
     char* buffer_with_tree;
     Array_with_variables array_with_variables;
+    Dump_information dump_info;
 };
 
 
