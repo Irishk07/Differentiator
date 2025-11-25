@@ -15,20 +15,35 @@
 
 
 enum Type_node {
-    OPERATOR_ADD   = 0,
-    OPERATOR_SUB   = 1,
-    OPERATOR_MUL   = 2,
-    OPERATOR_DIV   = 3,
-    OPERATOR_POW   = 4,
-    VARIABLE       = 5,
-    NUMBER         = 6,
-    WRONG_TYPE     = 7
+    VARIABLE    = 0,
+    NUMBER      = 1,
+    OPERATOR    = 2,
+    WRONG_TYPE  = 3
+};
+
+enum Type_operators {
+    OPERATOR_ADD    = 0,
+    OPERATOR_SUB    = 1,
+    OPERATOR_MUL    = 2,
+    OPERATOR_DIV    = 3,
+    OPERATOR_POW    = 4,
+    OPERATOR_LN     = 5,
+    OPERATOR_LOG    = 6,
+    OPERATOR_SIN    = 7,
+    OPERATOR_COS    = 8,
+    OPERATOR_TG     = 9,
+    OPERATOR_CTG    = 10,
+    OPERATOR_ARCSIN = 11,
+    OPERATOR_ARCCOS = 12,
+    OPERATOR_ARCTG  = 13,
+    OPERATOR_ARCCTG = 14,
+    WRONG_OPERATOR
 };
 
 union type_t {
-    double    number;
-    int       index_variable;
-    Type_node operators;
+    double number;
+    int    index_variable;
+    Type_operators operators;
 };
 
 enum Tree_status {
@@ -52,15 +67,16 @@ enum Tree_status {
 };
 
 enum Status_of_finding {
-    FIND_YES = 0,
-    FIND_NO  = 1
+    FIND_NO  = 0,
+    FIND_YES = 1
 };
 
 enum Prioritets {
-    NO_PRIOTITET     = 0,
-    LOW_PRIOTITET    = 1,
-    MIDDLE_PRIORITET = 2,
-    HIGH_PRIORITET   = 3
+    NO_PRIORITET      = 0,
+    LOW_PRIOTITET     = 1,
+    MIDDLE_PRIORITET  = 2,
+    HIGH_PRIORITET    = 3,
+    HIGHEST_PRIORITET = 4
 };
 
 
@@ -69,7 +85,7 @@ struct Tree_node {
     type_t value;
     Tree_node* left_node;
     Tree_node* right_node;
-    Tree_node* parent;
+    int need_dtor_childs = 1;
 };
 
 struct Dump_information {
@@ -106,12 +122,13 @@ struct Array_with_trees {
 };
 
 struct Differentiator {
-    Tree tree;
     char* begin_buffer;
     char* end_buffer;
     size_t size_buffer;
     char* buffer_with_tree;
     Array_with_variables array_with_variables;
+    Array_with_trees array_with_trees;
+    size_t cnt_trees;
     Dump_information dump_info;
 };
 

@@ -76,3 +76,9 @@ void ArrayDtorVariables(Array_with_variables* array_with_variables) {
         free(array_with_variables->data[i]);
     }
 }
+
+void ArrayDtorTrees(Array_with_trees* array_with_trees) {
+    for (size_t i = 0; i < array_with_trees->size; ++i) {
+        free(array_with_trees->data[i]);
+    }
+}

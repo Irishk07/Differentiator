@@ -26,5 +26,7 @@ Tree_status ArrayPushvariables(Array_with_variables* array_with_variables, varia
 
 void ArrayDtorVariables(Array_with_variables* array_with_variables);
 
+void ArrayDtorTrees(Array_with_trees* array_with_trees);
+
 
 #endif //STACK_H_

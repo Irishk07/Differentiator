@@ -1,5 +1,6 @@
 #include "common.h"
 #include "differentiator.h"
+#include "differentiation_functions.h"
 #include "tree.h"
 
 int main(int, char** argv) {
@@ -13,9 +14,13 @@ int main(int, char** argv) {
 
     UploadTree(&differentiator);
 
-    CalculateValueOfExample(&differentiator);
+    // CalculateValueOfExample(&differentiator);
 
-    TreeTexDump(&differentiator, &differentiator.tree);
+    Differentiation(&differentiator);
+
+    TreeHTMLDump(&differentiator, PointerOnTree(&differentiator)->root, DUMP_INFO, NOT_ERROR_DUMP);
+
+    TreeTexDump(&differentiator);
 
     DifferentiatorDtor(&differentiator);
 

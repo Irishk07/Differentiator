@@ -21,21 +21,28 @@ Tree_status TreeCtor(Tree* tree, const char* html_dump_filename, const char* dir
     return SUCCESS;
 }
 
-Tree_status NodeCtor(Tree* tree, Tree_node** new_node) {
+Tree_node* NodeCtor(Tree* tree, Type_node type, type_t value,
+                    Tree_node* left_node, Tree_node* right_node) {
     assert(tree);
-    assert(new_node);
 
-    *new_node = (Tree_node*)calloc(1, sizeof(Tree_node));
-    if (*new_node == NULL)
-        TREE_CHECK_AND_RETURN_ERRORS(MEMORY_ERROR);
+    Tree_node* new_node = (Tree_node*)calloc(1, sizeof(Tree_node));
+    if (new_node == NULL)
+        return NULL;
 
+    new_node->left_node  = left_node;
+    new_node->right_node = right_node;
+    new_node->type       = type;
+    new_node->value      = value;
     tree->size++;
+    new_node->need_dtor_childs = 1;
 
-    return SUCCESS;
+    return new_node;
 }
 
 
-Tree_status TreeVerify(Differentiator* differentiator, Tree* tree) {
+Tree_status TreeVerify(Differentiator* differentiator) {
+    Tree* tree = PointerOnTree(differentiator);
+
     if (tree == NULL)
         TREE_DUMP_AND_RETURN_ERRORS(NULL_POINTER_ON_TREE);
 
@@ -51,28 +58,12 @@ Tree_status AllNodesVerify(Tree* tree, Tree_node* tree_node) {
     if (tree_node == NULL)
         return SUCCESS;
 
-    TREE_CHECK_AND_RETURN_ERRORS(OneNodeVerify(tree, tree_node));
+    if (tree_node == NULL) TREE_CHECK_AND_RETURN_ERRORS(NULL_POINTER_ON_NODE);
 
     TREE_CHECK_AND_RETURN_ERRORS(AllNodesVerify(tree, tree_node->left_node));
 
     TREE_CHECK_AND_RETURN_ERRORS(AllNodesVerify(tree, tree_node->right_node));
 
-    return SUCCESS;
-}
-
-Tree_status OneNodeVerify(Tree* tree, Tree_node* tree_node) {
-    if (tree_node == NULL)            TREE_CHECK_AND_RETURN_ERRORS(NULL_POINTER_ON_NODE);
-
-    if (tree_node == tree->root && 
-        tree_node->parent != NULL)    TREE_CHECK_AND_RETURN_ERRORS(WRONG_ROOT);
-
-    if (tree_node != tree->root &&
-        tree_node->parent == NULL)    TREE_CHECK_AND_RETURN_ERRORS(WRONG_NODE);
-
-    if (tree_node != tree->root) {
-        if (tree_node->parent->left_node != tree_node &&
-            tree_node->parent->right_node != tree_node) TREE_CHECK_AND_RETURN_ERRORS(PARENT_AND_CHILD_UNEQUAL);
-    }
     return SUCCESS;
 }
 
@@ -108,13 +99,32 @@ char* NameOfVariable(Differentiator* differentiator, Tree_node* tree_node) {
     return (differentiator->array_with_variables.data)[IndexOfVariable(tree_node)]->name;
 }
 
-const char* IndetifySign(Type_node type_node) {
-    switch(type_node) {
-        case OPERATOR_ADD: return "+";
-        case OPERATOR_SUB: return "-";
-        case OPERATOR_MUL: return "*";
-        case OPERATOR_DIV: return "\\";
-        case OPERATOR_POW: return "^";
+Tree* PointerOnTree(Differentiator* differentiator) {
+    return differentiator->array_with_trees.data[differentiator->array_with_trees.size - 1];
+}
+
+const char* IndetifySign(Tree_node* tree_node) {
+    switch(tree_node->type) {
+        case OPERATOR:
+            switch (tree_node->value.operators) {
+                case OPERATOR_ADD: return "+";
+                case OPERATOR_SUB: return "-";
+                case OPERATOR_MUL: return "*";
+                case OPERATOR_DIV: return "/";
+                case OPERATOR_POW: return "^";
+                case OPERATOR_LN:  return "ln";
+                case OPERATOR_LOG: return "log";
+                case OPERATOR_SIN: return "sin";
+                case OPERATOR_COS: return "cos";
+                case OPERATOR_TG:  return "tg";
+                case OPERATOR_CTG: return "ctg";
+                case OPERATOR_ARCSIN: return "arcsin";
+                case OPERATOR_ARCCOS: return "arccos";
+                case OPERATOR_ARCTG:  return "arctg";
+                case OPERATOR_ARCCTG: return "arcctg";
+                case WRONG_OPERATOR:
+                default: break;
+            }
         case NUMBER:
         case VARIABLE:
         case WRONG_TYPE:
@@ -125,7 +135,7 @@ const char* IndetifySign(Type_node type_node) {
 }
 
 
-Tree_status TreeHTMLDump(Differentiator* differentiator, Tree* tree, Tree_node* tree_node, int line, const char* file, Type_dump type_dump, Tree_status tree_status) {
+Tree_status TreeHTMLDump(Differentiator* differentiator, Tree_node* tree_node, int line, const char* file, Type_dump type_dump, Tree_status tree_status) {
     FILE* html_dump_file = NULL;
     if (differentiator->dump_info.num_dump == 0)
         html_dump_file = fopen(differentiator->dump_info.html_dump_filename, "w");
@@ -151,11 +161,11 @@ Tree_status TreeHTMLDump(Differentiator* differentiator, Tree* tree, Tree_node* 
 
     fprintf(html_dump_file, "Tree {%s: %d}\n", file, line);
 
-    fprintf(html_dump_file, "Size: %zu\n", tree->size);
+    fprintf(html_dump_file, "Size: %zu\n", PointerOnTree(differentiator)->size);
 
-    fprintf(html_dump_file, "Root: %p\n", tree->root);
+    fprintf(html_dump_file, "Root: %p\n", PointerOnTree(differentiator)->root);
 
-    TREE_CHECK_AND_RETURN_ERRORS(GenerateGraph(differentiator, tree, tree_node));
+    TREE_CHECK_AND_RETURN_ERRORS(GenerateGraph(differentiator, tree_node));
 
     char command[MAX_LEN_NAME] = {};
     snprintf(command, MAX_LEN_NAME, "dot %s/graphes/graph%d.txt -T png -o %s/images/image%d.png", 
@@ -178,7 +188,7 @@ Tree_status TreeHTMLDump(Differentiator* differentiator, Tree* tree, Tree_node* 
     return SUCCESS;
 }
 
-Tree_status GenerateGraph(Differentiator* differentiator, Tree* tree, Tree_node* tree_node) {
+Tree_status GenerateGraph(Differentiator* differentiator, Tree_node* tree_node) {
     char filename_graph[MAX_LEN_NAME] = {};
     snprintf(filename_graph, MAX_LEN_NAME, "%s/graphes/graph%d.txt", differentiator->dump_info.directory, differentiator->dump_info.num_dump);
 
@@ -190,7 +200,7 @@ Tree_status GenerateGraph(Differentiator* differentiator, Tree* tree, Tree_node*
     fprintf(graph, "    node [shape = Mrecord, style = filled, fillcolor = \"#99FF99\"];\n");
 
     if (tree_node != NULL) {
-        PrintNodeToDot(differentiator, tree, graph, tree_node);
+        PrintNodeToDot(differentiator, graph, tree_node);
     } 
     else {
         fprintf(graph, "There will be no tree\n");
@@ -204,35 +214,35 @@ Tree_status GenerateGraph(Differentiator* differentiator, Tree* tree, Tree_node*
     return SUCCESS;
 }
 
-void PrintNodeToDot(Differentiator* differentiator, Tree* tree, FILE *file, Tree_node* tree_node) {
+void PrintNodeToDot(Differentiator* differentiator, FILE *file, Tree_node* tree_node) {
     assert(file);
     assert(tree_node);
 
     if (tree_node->type == NUMBER) {
-        fprintf(file, "    node_%p [label=\"{%p | type = Number | value = %lg | parent = %p | left = %p | right = %p}\"];\n", 
-                      (void *)tree_node, tree_node, tree_node->value.number, tree_node->parent, tree_node->left_node, tree_node->right_node);
+        fprintf(file, "    node_%p [label=\"{%p | type = Number | value = %lg | left = %p | right = %p}\"];\n", 
+                      (void *)tree_node, tree_node, tree_node->value.number, tree_node->left_node, tree_node->right_node);
     }    
 
     else if (tree_node->type == VARIABLE) {
-        fprintf(file, "    node_%p [label=\"{%p | type = Variable | value = %s (%lg) | parent = %p | left = %p | right = %p}\"];\n", 
+        fprintf(file, "    node_%p [label=\"{%p | type = Variable | value = %s (%lg) | left = %p | right = %p}\"];\n", 
                       (void *)tree_node, tree_node, NameOfVariable(differentiator, tree_node), ValueOfVariable(differentiator, tree_node), 
-                      tree_node->parent, tree_node->left_node, tree_node->right_node);
+                      tree_node->left_node, tree_node->right_node);
     }
 
     else if (tree_node->type != WRONG_TYPE) {
-        fprintf(file, "    node_%p [label=\"{%p | type = Operator | value = %s | parent = %p | left = %p | right = %p}\"];\n", 
-                      (void *)tree_node, tree_node, IndetifySign(tree_node->type), tree_node->parent, tree_node->left_node, tree_node->right_node);
+        fprintf(file, "    node_%p [label=\"{%p | type = Operator | value = %s | left = %p | right = %p}\"];\n", 
+                      (void *)tree_node, tree_node, IndetifySign(tree_node), tree_node->left_node, tree_node->right_node);
     }  
 
 
     if (tree_node->left_node) {
         fprintf(file, "    node_%p -> node_%p [label = \"Yes\", color = \"#FF6600\"];\n ", (void *)tree_node, (void *)tree_node->left_node);
-        PrintNodeToDot(differentiator, tree, file, tree_node->left_node);
+        PrintNodeToDot(differentiator, file, tree_node->left_node);
     }
 
     if (tree_node->right_node) {
         fprintf(file, "    node_%p -> node_%p [label = \"No\", color = \"#0000CC\"];\n", (void *)tree_node, (void *)tree_node->right_node);
-        PrintNodeToDot(differentiator, tree, file, tree_node->right_node);
+        PrintNodeToDot(differentiator, file, tree_node->right_node);
     }
 }
 

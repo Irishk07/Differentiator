@@ -3,4 +3,4 @@ build/
 dump/
 dump*
 tree_prog
-with_tree.txt
+*.txt

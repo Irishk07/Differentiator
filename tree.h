@@ -10,7 +10,7 @@
         {                                                                                        \
             Tree_status now_error = error;                                                       \
             if (now_error != SUCCESS) {                                                          \
-                TreeHTMLDump(differentiator, tree, tree->root, DUMP_INFO, ERROR_DUMP, now_error);\
+                TreeHTMLDump(differentiator, tree->root, DUMP_INFO, ERROR_DUMP, now_error);      \
                 return now_error;                                                                \
             }                                                                                    \
         }
@@ -31,13 +31,12 @@ enum Type_dump {
 
 Tree_status TreeCtor(Tree* tree, const char* html_dump_filename, const char* directory);
 
-Tree_status NodeCtor(Tree* tree, Tree_node** new_node);
+Tree_node* NodeCtor(Tree* tree, Type_node type, type_t value,
+                    Tree_node* left_node, Tree_node* right_node);
 
-Tree_status TreeVerify(Differentiator* differentiator, Tree* tree);
+Tree_status TreeVerify(Differentiator* differentiator);
 
 Tree_status AllNodesVerify(Tree* tree, Tree_node* tree_node);
-
-Tree_status OneNodeVerify(Tree* tree, Tree_node* tree_node);
 
 size_t TreeSize(Tree_node* tree_node);
 
@@ -49,13 +48,15 @@ char* NameOfVariable(Differentiator* differentiator, Tree_node* tree_node);
 
 size_t IndexOfVariable(Tree_node* tree_node);
 
-const char* IndetifySign(Type_node type_node);
+Tree* PointerOnTree(Differentiator* differentiator);
 
-Tree_status TreeHTMLDump(Differentiator* differentiator, Tree* tree, Tree_node* tree_node, int line, const char* file, Type_dump type_dump, Tree_status tree_status);
+const char* IndetifySign(Tree_node* tree_node);
 
-Tree_status GenerateGraph(Differentiator* differentiator, Tree* tree, Tree_node* tree_node);
+Tree_status TreeHTMLDump(Differentiator* differentiator, Tree_node* tree_node, int line, const char* file, Type_dump type_dump, Tree_status tree_status);
 
-void PrintNodeToDot(Differentiator* differentiator, Tree* tree, FILE *file, Tree_node* tree_node);
+Tree_status GenerateGraph(Differentiator* differentiator, Tree_node* tree_node);
+
+void PrintNodeToDot(Differentiator* differentiator, FILE *file, Tree_node* tree_node);
 
 void PrintErrors(int error, FILE* stream);
 
