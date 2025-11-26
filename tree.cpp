@@ -107,21 +107,25 @@ const char* IndetifySign(Tree_node* tree_node) {
     switch(tree_node->type) {
         case OPERATOR:
             switch (tree_node->value.operators) {
-                case OPERATOR_ADD: return "+";
-                case OPERATOR_SUB: return "-";
-                case OPERATOR_MUL: return "*";
-                case OPERATOR_DIV: return "/";
-                case OPERATOR_POW: return "^";
-                case OPERATOR_LN:  return "ln";
-                case OPERATOR_LOG: return "log";
-                case OPERATOR_SIN: return "sin";
-                case OPERATOR_COS: return "cos";
-                case OPERATOR_TG:  return "tg";
-                case OPERATOR_CTG: return "ctg";
+                case OPERATOR_ADD:    return "+";
+                case OPERATOR_SUB:    return "-";
+                case OPERATOR_MUL:    return "*";
+                case OPERATOR_DIV:    return "/";
+                case OPERATOR_POW:    return "^";
+                case OPERATOR_LN:     return "ln";
+                case OPERATOR_LOG:    return "log";
+                case OPERATOR_SIN:    return "sin";
+                case OPERATOR_COS:    return "cos";
+                case OPERATOR_TG:     return "tg";
+                case OPERATOR_CTG:    return "ctg";
                 case OPERATOR_ARCSIN: return "arcsin";
                 case OPERATOR_ARCCOS: return "arccos";
                 case OPERATOR_ARCTG:  return "arctg";
                 case OPERATOR_ARCCTG: return "arcctg";
+                case OPERATOR_SH:     return "sh";
+                case OPERATOR_CH:     return "ch";
+                case OPERATOR_TH:     return "th";
+                case OPERATOR_CTH:    return "cth";
                 case WRONG_OPERATOR:
                 default: break;
             }

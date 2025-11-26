@@ -42,7 +42,7 @@ double Calculating(Differentiator* differentiator, Tree_node* tree_node);
 
 Tree_status TreeTexDump(Differentiator* differentiator);
 
-void PrintExpressionToTex(Differentiator* differentiator, Tree_node* tree_node, FILE* tex_dump_file, Prioritets parent_prioritet);
+void PrintExpressionToTex(Differentiator* differentiator, Tree_node* tree_node, FILE* tex_dump_file, Prioritets parent_prioritet, int depth);
 
 Prioritets GetPrioritet(Tree_node* tree_node);
 

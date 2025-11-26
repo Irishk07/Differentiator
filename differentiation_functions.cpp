@@ -16,11 +16,15 @@ Tree_status Differentiation(Differentiator* differentiator) {
     color_printf(COLOR_PURPLE, " - By which variable do you want to differentiate?\n");
     char* variable = ReadAnswer();
 
+    // color_printf(COLOR_PURPLE, " - Enter, please, number of differention\n");
+    // int number = 0;
+    // scanf("%d", &number);
+
     Tree_node* old_tree_root = PointerOnTree(differentiator)->root;
 
     Tree* new_tree = (Tree*)calloc(1, sizeof(Tree));
     ArrayPushtrees(&differentiator->array_with_trees, new_tree);
-     
+    
     new_tree->root = DifferentiationFunctions(differentiator, old_tree_root, variable);
 
     free(variable);
@@ -67,6 +71,14 @@ Tree_status Differentiation(Differentiator* differentiator) {
 #define ATAN_(left) NodeCtor(tree, OPERATOR, (type_t){.operators = OPERATOR_ARCTG}, left, NULL)
 
 #define ACOT_(left) NodeCtor(tree, OPERATOR, (type_t){.operators = OPERATOR_ARCCTG}, left, NULL)
+
+#define SH_(left)  NodeCtor(tree, OPERATOR, (type_t){.operators = OPERATOR_SH}, left, NULL)
+
+#define CH_(left)  NodeCtor(tree, OPERATOR, (type_t){.operators = OPERATOR_CH}, left, NULL)
+
+#define TH_(left)  NodeCtor(tree, OPERATOR, (type_t){.operators = OPERATOR_TH}, left, NULL)
+
+#define CTH_(left)  NodeCtor(tree, OPERATOR, (type_t){.operators = OPERATOR_CTH}, left, NULL)
 
 
 Tree_node* DifferentiationFunctions(Differentiator* differentiator, Tree_node* tree_node, const char* variable) {
@@ -140,6 +152,18 @@ Tree_node* DifferentiationFunctions(Differentiator* differentiator, Tree_node* t
             case OPERATOR_ARCCTG:
                 new_node = MUL_(MUL_(NUMBER_NODE_CTOR(-1), DIV_(NUMBER_NODE_CTOR(1), ADD_(NUMBER_NODE_CTOR(1), POW_(cL, NUMBER_NODE_CTOR(2))))), dL); break;
 
+            case OPERATOR_SH:
+                new_node = MUL_(CH_(cL), dL); break;
+
+            case OPERATOR_CH:
+                new_node = MUL_(SH_(cL), dL); break;
+
+            case OPERATOR_TH:
+                new_node = MUL_(DIV_(NUMBER_NODE_CTOR(1), POW_(CH_(cL), NUMBER_NODE_CTOR(2))), dL); break;
+
+            case OPERATOR_CTH:
+                new_node = MUL_(MUL_(NUMBER_NODE_CTOR(-1), DIV_(NUMBER_NODE_CTOR(1), POW_(SH_(cL), NUMBER_NODE_CTOR(2)))), dL); break;
+
             case WRONG_OPERATOR:
             default: break;
         }
@@ -171,6 +195,7 @@ Status_of_finding ContainsVariable(Differentiator* differentiator, Tree_node* tr
             return FIND_NO;
         case NUMBER:
         case OPERATOR:
+        case WRONG_TYPE:
         default:
             return FIND_NO;
     }

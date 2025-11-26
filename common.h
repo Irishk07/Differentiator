@@ -37,6 +37,10 @@ enum Type_operators {
     OPERATOR_ARCCOS = 12,
     OPERATOR_ARCTG  = 13,
     OPERATOR_ARCCTG = 14,
+    OPERATOR_SH     = 15,  
+    OPERATOR_CH     = 16,  
+    OPERATOR_TH     = 17,  
+    OPERATOR_CTH    = 18, 
     WRONG_OPERATOR
 };
 

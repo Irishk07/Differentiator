@@ -14,9 +14,9 @@ int main(int, char** argv) {
 
     UploadTree(&differentiator);
 
-    // CalculateValueOfExample(&differentiator);
+    CalculateValueOfExample(&differentiator);
 
-    Differentiation(&differentiator);
+    // Differentiation(&differentiator);
 
     TreeHTMLDump(&differentiator, PointerOnTree(&differentiator)->root, DUMP_INFO, NOT_ERROR_DUMP);
 
