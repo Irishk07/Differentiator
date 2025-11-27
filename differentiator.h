@@ -13,7 +13,6 @@
 
 
 const int DEFAULT_VALUE = 666;
-const int CNT_ATTEMPTS  = 5;
 
 
 Tree_status DifferentiatorCtor(Differentiator* differentiator, const char* html_dump_filename, const char* tex_dump_filename, const char* directory);
@@ -34,17 +33,11 @@ Status_of_finding ItIsVariable(Differentiator* differentiator, char* buffer, typ
 
 void SkipSpaces(char** buffer);
 
-Tree_status CalculateValueOfExample(Differentiator* differentiator);
+Tree_status CalculateValueOfExample(Differentiator* differentiator, Tree_node* tree_node);
 
 Tree_status FillValueOfVariables(Differentiator* differentiator, size_t index_of_variable);
 
 double Calculating(Differentiator* differentiator, Tree_node* tree_node);
-
-Tree_status TreeTexDump(Differentiator* differentiator);
-
-void PrintExpressionToTex(Differentiator* differentiator, Tree_node* tree_node, FILE* tex_dump_file, Prioritets parent_prioritet, int depth);
-
-Prioritets GetPrioritet(Tree_node* tree_node);
 
 Tree_status DifferentiatorDtor(Differentiator* differentiator);
 

@@ -14,6 +14,9 @@
         }
 
 
+const int CNT_ATTEMPTS  = 5;
+
+
 enum Type_node {
     VARIABLE    = 0,
     NUMBER      = 1,
@@ -68,6 +71,7 @@ enum Tree_status {
     SYNTAX_ERROR             = 14,
     BUFFER_OVERFLOW          = 15,
     STAT_ERROR               = 16,
+    INPUT_ERROR              = 17
 };
 
 enum Status_of_finding {
@@ -89,14 +93,14 @@ struct Tree_node {
     type_t value;
     Tree_node* left_node;
     Tree_node* right_node;
-    int need_dtor_childs = 1;
 };
 
 struct Dump_information {
     const char* html_dump_filename;
     const char* tex_dump_filename;
     const char* directory;
-    int num_dump = 0;
+    int num_html_dump = 0;
+    FILE* tex_dump_file;
 };
 
 struct Tree {
@@ -132,7 +136,6 @@ struct Differentiator {
     char* buffer_with_tree;
     Array_with_variables array_with_variables;
     Array_with_trees array_with_trees;
-    size_t cnt_trees;
     Dump_information dump_info;
 };
 

@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <math.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -7,6 +8,7 @@
 #include "array.h"
 #include "colors.h"
 #include "common.h"
+#include "differentiator.h"
 #include "tree.h"
 
 
@@ -16,16 +18,34 @@ Tree_status Differentiation(Differentiator* differentiator) {
     color_printf(COLOR_PURPLE, " - By which variable do you want to differentiate?\n");
     char* variable = ReadAnswer();
 
-    // color_printf(COLOR_PURPLE, " - Enter, please, number of differention\n");
-    // int number = 0;
-    // scanf("%d", &number);
+    int number = ReadNumberDifferentiation();
+    if (number == -1)
+        return INPUT_ERROR;
 
-    Tree_node* old_tree_root = PointerOnTree(differentiator)->root;
+    CreateTexFileForDump(differentiator);
 
-    Tree* new_tree = (Tree*)calloc(1, sizeof(Tree));
-    ArrayPushtrees(&differentiator->array_with_trees, new_tree);
-    
-    new_tree->root = DifferentiationFunctions(differentiator, old_tree_root, variable);
+    while (number-- > 0){
+
+        Tree_node* old_tree_root = PointerOnTree(differentiator)->root;
+
+        Tree* new_tree = (Tree*)calloc(1, sizeof(Tree));
+        if (new_tree == NULL)
+            TREE_CHECK_AND_RETURN_ERRORS(MEMORY_ERROR,      free(variable););
+
+        TREE_CHECK_AND_RETURN_ERRORS(ArrayPushtrees(&differentiator->array_with_trees, new_tree),   free(variable););
+        
+        new_tree->root = DifferentiationFunctions(differentiator, old_tree_root, variable);
+
+        TreeHTMLDump(differentiator, PointerOnTree(differentiator)->root, DUMP_INFO, NOT_ERROR_DUMP);
+
+        TreeTexDump(differentiator, old_tree_root, new_tree->root, variable);
+
+        OptimizationTree(differentiator, &new_tree->root, variable);
+
+        TreeTexDump(differentiator, old_tree_root, new_tree->root, variable);
+    }
+
+    ClostTexFileForDump(differentiator);
 
     free(variable);
 
@@ -83,19 +103,24 @@ Tree_status Differentiation(Differentiator* differentiator) {
 
 Tree_node* DifferentiationFunctions(Differentiator* differentiator, Tree_node* tree_node, const char* variable) {
     assert(differentiator);
+    assert(tree_node);
     assert(variable);
 
     Tree* tree = PointerOnTree(differentiator);
     Tree_node* new_node = NULL;
 
+    if (tree_node->type == VARIABLE) {
+        int result_compare = strcmp(NameOfVariable(differentiator, tree_node), variable);
+
+        if (result_compare != 0)
+            new_node = NodeCtor(tree, NUMBER, (type_t){.number = 0}, tree_node->left_node, tree_node->right_node);
+        
+        else 
+            new_node = NodeCtor(tree, NUMBER, (type_t){.number = 1}, tree_node->left_node, tree_node->right_node);
+    }        
+
     if (tree_node->type == NUMBER)
         new_node = NodeCtor(tree, NUMBER, (type_t){.number = 0}, tree_node->left_node, tree_node->right_node);
-    
-    if (tree_node->type == VARIABLE && strcmp(NameOfVariable(differentiator, tree_node), variable) != 0)
-        new_node = NodeCtor(tree, NUMBER, (type_t){.number = 0}, tree_node->left_node, tree_node->right_node);
-
-    if (tree_node->type == VARIABLE && strcmp(NameOfVariable(differentiator, tree_node), variable) == 0)
-         new_node = NodeCtor(tree, NUMBER, (type_t){.number = 1}, tree_node->left_node, tree_node->right_node);
 
     if (tree_node->type == OPERATOR) {
         switch(tree_node->value.operators) {
@@ -113,13 +138,19 @@ Tree_node* DifferentiationFunctions(Differentiator* differentiator, Tree_node* t
 
             case OPERATOR_POW:
                 {
-                Tree_node* base_power = POW_(cL, cR);     
-                Tree_node* ln_base = LN_(cL);                
-                Tree_node* term1 = MUL_(dR, ln_base);       
-                Tree_node* term2 = DIV_(MUL_(cR, dL), cL);  
-                Tree_node* sum_terms = ADD_(term1, term2);  
-                new_node = MUL_(base_power, sum_terms);
-                break;
+                Status_of_finding find_in_left_node = ContainsVariable(differentiator, tree_node->left_node, variable);
+                Status_of_finding find_in_right_node = ContainsVariable(differentiator, tree_node->right_node, variable);
+                if (find_in_left_node && !find_in_right_node) {
+                    new_node = MUL_(cR, MUL_(POW_(cL, SUB_(cR, NUMBER_NODE_CTOR(1))), dL)); break;
+                }
+                else {
+                    // Tree_node* base_power = POW_(cL, cR);     
+                    // Tree_node* ln_base = LN_(cL);                
+                    // Tree_node* term1 = MUL_(dR, ln_base);       
+                    // Tree_node* term2 = DIV_(MUL_(cR, dL), cL);  
+                    // Tree_node* sum_terms = ADD_(term1, term2);  
+                    new_node = MUL_(POW_(cL, cR), ADD_(MUL_(dR, LN_(cL)), DIV_(MUL_(cR, dL), cL))); break;
+                }
                 }
 
             case OPERATOR_LN:
@@ -165,7 +196,7 @@ Tree_node* DifferentiationFunctions(Differentiator* differentiator, Tree_node* t
                 new_node = MUL_(MUL_(NUMBER_NODE_CTOR(-1), DIV_(NUMBER_NODE_CTOR(1), POW_(SH_(cL), NUMBER_NODE_CTOR(2)))), dL); break;
 
             case WRONG_OPERATOR:
-            default: break;
+            default: return NULL;
         }
     }
 
@@ -174,18 +205,29 @@ Tree_node* DifferentiationFunctions(Differentiator* differentiator, Tree_node* t
 
 Tree_node* CopyPartOfTree(Differentiator* differentiator, Tree_node* old_node) {
     assert(differentiator);
-    assert(old_node);
 
-    Tree_node* new_node = NodeCtor(PointerOnTree(differentiator), old_node->type, old_node->value, old_node->left_node, old_node->right_node);
+    if (old_node == NULL) {
+        return NULL;
+    }
 
-    new_node->need_dtor_childs = 0;
+    Tree_node* new_node = NodeCtor(PointerOnTree(differentiator), old_node->type, old_node->value, NULL, NULL);
+    if (new_node == NULL) {
+        return NULL;
+    }
 
-    PointerOnTree(differentiator)->size += TreeSize(old_node) - 1;
+    new_node->type = old_node->type;
+    new_node->value = old_node->value;
+
+    new_node->left_node = CopyPartOfTree(differentiator, old_node->left_node);
+    new_node->right_node = CopyPartOfTree(differentiator, old_node->right_node);
 
     return new_node;
 }
 
 Status_of_finding ContainsVariable(Differentiator* differentiator, Tree_node* tree_node, const char* variable) {
+    assert(differentiator);
+    assert(variable);
+
     if (tree_node == NULL) return FIND_NO;
     
     switch (tree_node->type) {
@@ -195,10 +237,175 @@ Status_of_finding ContainsVariable(Differentiator* differentiator, Tree_node* tr
             return FIND_NO;
         case NUMBER:
         case OPERATOR:
+            if (ContainsVariable(differentiator, tree_node->left_node, variable) == FIND_YES ||
+                ContainsVariable(differentiator, tree_node->right_node, variable) == FIND_YES)
+                    return FIND_YES;
+            else
+                return FIND_NO;
         case WRONG_TYPE:
         default:
             return FIND_NO;
     }
 
     return FIND_NO;
+}
+
+int ReadNumberDifferentiation() {
+    int number = -1;
+
+    int cnt_attempts = CNT_ATTEMPTS;
+    while (cnt_attempts-- > 0) {
+        color_printf(COLOR_PURPLE, " - Enter, please, number of differention\n");
+
+        if (scanf("%d%*c", &number) != 1)
+            scanf("%*[^\n]%*c");
+
+        if (number >= 0)
+            return number;
+    }
+
+    return number;
+}
+
+void OptimizationTree(Differentiator* differentiator, Tree_node** old_node, const char* variable) {
+    if (old_node == NULL) 
+        return;
+
+    if ((*old_node)->left_node)
+        OptimizationTree(differentiator, &(*old_node)->left_node, variable);
+    if ((*old_node)->right_node)
+        OptimizationTree(differentiator, &(*old_node)->right_node, variable);
+
+    if ((*old_node)->type == OPERATOR)
+        OptimizationNode(differentiator, old_node, variable);
+}
+
+void OptimizationNode(Differentiator* differentiator, Tree_node** old_node, const char* variable) {
+    Tree* tree = PointerOnTree(differentiator);
+
+    if (IsConstantNode(differentiator, *old_node, variable)) {
+        double result = Calculating(differentiator, (*old_node));
+        DifferentiatorNodeDtor(differentiator, *old_node);
+        *old_node = NUMBER_NODE_CTOR(result);
+        return;
+    }
+    
+    if ((*old_node)->value.operators == OPERATOR_MUL && 
+        (IsZeroNode((*old_node)->left_node) || IsZeroNode((*old_node)->right_node))) {
+        DifferentiatorNodeDtor(differentiator, (*old_node));
+        (*old_node) = NUMBER_NODE_CTOR(0.0);
+        return;
+    }
+
+    if (IsOneNode((*old_node)->left_node)) {
+        switch ((*old_node)->value.operators) {
+            case OPERATOR_MUL:
+            case OPERATOR_DIV:
+            case OPERATOR_POW:
+                {
+                    Tree_node* right_child = (*old_node)->right_node;
+                    DifferentiatorNodeDtor(differentiator, (*old_node)->left_node);
+                    free((*old_node));
+                    (*old_node) = right_child;
+                    return;
+                }            
+            default:
+                break;
+        }
+    }
+
+    if (IsOneNode((*old_node)->right_node)) {
+        switch ((*old_node)->value.operators) {
+            case OPERATOR_MUL:
+            case OPERATOR_DIV:
+            case OPERATOR_POW:
+                {
+                    Tree_node* left_child = (*old_node)->left_node;
+                    DifferentiatorNodeDtor(differentiator, (*old_node)->right_node);
+                    free((*old_node));
+                    (*old_node) = left_child;
+                    return;
+                }
+            default:
+                break;
+            }
+    }
+
+    if (IsZeroNode((*old_node)->left_node)) {
+        switch ((*old_node)->value.operators) {
+            case OPERATOR_ADD:
+            case OPERATOR_SUB:
+                {
+                    Tree_node* right_child = (*old_node)->right_node;
+                    DifferentiatorNodeDtor(differentiator, (*old_node)->left_node);
+                    free((*old_node));
+                    (*old_node) = right_child;
+                    return;
+                }
+            case OPERATOR_POW:
+                {
+                    DifferentiatorNodeDtor(differentiator, (*old_node)->left_node);
+                    (*old_node) = NUMBER_NODE_CTOR(1.0);
+                    return;
+                }
+            default:
+                break;
+            }
+    }
+
+    if (IsZeroNode((*old_node)->right_node)) {
+        switch ((*old_node)->value.operators) {
+            case OPERATOR_ADD:
+            case OPERATOR_SUB:
+                {
+                    Tree_node* left_child = (*old_node)->left_node;
+                    DifferentiatorNodeDtor(differentiator, (*old_node)->right_node);
+                    free((*old_node));
+                    (*old_node) = left_child;
+                    return;
+                }
+            case OPERATOR_POW:
+                {
+                    DifferentiatorNodeDtor(differentiator, (*old_node)->right_node);
+                    free((*old_node));
+                    (*old_node) = NUMBER_NODE_CTOR(1.0);
+                    return;
+                }
+            default:
+                break;
+            }
+    }
+}
+
+bool IsConstantNode(Differentiator* differentiator, Tree_node* node, const char* variable) {
+    if (node == NULL) return true;
+    
+    switch (node->type) {
+        case NUMBER:
+            return true;
+            
+        case VARIABLE:
+            return strcmp(NameOfVariable(differentiator, node), variable) != 0;
+            
+        case OPERATOR:
+            return IsConstantNode(differentiator, node->left_node, variable) && 
+                   IsConstantNode(differentiator, node->right_node, variable);
+            
+        default:
+            return false;
+    }
+}
+
+bool IsZeroNode(Tree_node* node) {
+    if (node == NULL) 
+        return false;
+
+    return (node->type == NUMBER && fabs(node->value.number) < 1e-10);
+}
+
+bool IsOneNode(Tree_node* node) {
+    if (node == NULL) 
+        return false;
+
+    return (node->type == NUMBER && fabs(node->value.number - 1.0) < 1e-10);
 }

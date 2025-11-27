@@ -34,7 +34,6 @@ Tree_node* NodeCtor(Tree* tree, Type_node type, type_t value,
     new_node->type       = type;
     new_node->value      = value;
     tree->size++;
-    new_node->need_dtor_childs = 1;
 
     return new_node;
 }
@@ -82,28 +81,40 @@ char* ReadAnswer() {
     if (getline(&answer, &size_buf, stdin) == -1)
         return NULL;
 
-    answer[strlen(answer) - 1] = '\0';
+    answer[strlen(answer) - 1] = '\0'; // FIXME no strlen 
 
     return answer;
 }
 
 size_t IndexOfVariable(Tree_node* tree_node) {
+    assert(tree_node);
+
     return (size_t)tree_node->value.index_variable;
 }
 
 double ValueOfVariable(Differentiator* differentiator, Tree_node* tree_node) {
+    assert(differentiator);
+    assert(tree_node);
+
     return (differentiator->array_with_variables.data)[IndexOfVariable(tree_node)]->value;
 }
 
 char* NameOfVariable(Differentiator* differentiator, Tree_node* tree_node) {
+    assert(differentiator);
+    assert(tree_node);
+
     return (differentiator->array_with_variables.data)[IndexOfVariable(tree_node)]->name;
 }
 
 Tree* PointerOnTree(Differentiator* differentiator) {
+    assert(differentiator);
+
     return differentiator->array_with_trees.data[differentiator->array_with_trees.size - 1];
 }
 
 const char* IndetifySign(Tree_node* tree_node) {
+    assert(tree_node);
+
     switch(tree_node->type) {
         case OPERATOR:
             switch (tree_node->value.operators) {
@@ -140,8 +151,11 @@ const char* IndetifySign(Tree_node* tree_node) {
 
 
 Tree_status TreeHTMLDump(Differentiator* differentiator, Tree_node* tree_node, int line, const char* file, Type_dump type_dump, Tree_status tree_status) {
+    assert(differentiator);
+    assert(file);
+
     FILE* html_dump_file = NULL;
-    if (differentiator->dump_info.num_dump == 0)
+    if (differentiator->dump_info.num_html_dump == 0)
         html_dump_file = fopen(differentiator->dump_info.html_dump_filename, "w");
     else
         html_dump_file = fopen(differentiator->dump_info.html_dump_filename, "a");
@@ -173,18 +187,18 @@ Tree_status TreeHTMLDump(Differentiator* differentiator, Tree_node* tree_node, i
 
     char command[MAX_LEN_NAME] = {};
     snprintf(command, MAX_LEN_NAME, "dot %s/graphes/graph%d.txt -T png -o %s/images/image%d.png", 
-                                     differentiator->dump_info.directory, differentiator->dump_info.num_dump, 
-                                     differentiator->dump_info.directory, differentiator->dump_info.num_dump);
+                                     differentiator->dump_info.directory, differentiator->dump_info.num_html_dump, 
+                                     differentiator->dump_info.directory, differentiator->dump_info.num_html_dump);
     
     if (system((const char*)command) != 0)
         TREE_CHECK_AND_RETURN_ERRORS(EXECUTION_FAILED,      fprintf(html_dump_file, "Error with create image:(\n"));
 
     fprintf(html_dump_file, "\n");
-    fprintf(html_dump_file, "<img src = %s/images/image%d.png width = 700px>", differentiator->dump_info.directory, differentiator->dump_info.num_dump);
+    fprintf(html_dump_file, "<img src = %s/images/image%d.png width = 700px>", differentiator->dump_info.directory, differentiator->dump_info.num_html_dump);
 
     fprintf(html_dump_file, "\n\n");
 
-    differentiator->dump_info.num_dump++;
+    differentiator->dump_info.num_html_dump++;
 
     if (fclose(html_dump_file) == EOF)
         TREE_CHECK_AND_RETURN_ERRORS(CLOSE_ERROR,      perror("Error is: "));
@@ -193,8 +207,10 @@ Tree_status TreeHTMLDump(Differentiator* differentiator, Tree_node* tree_node, i
 }
 
 Tree_status GenerateGraph(Differentiator* differentiator, Tree_node* tree_node) {
+    assert(differentiator);
+
     char filename_graph[MAX_LEN_NAME] = {};
-    snprintf(filename_graph, MAX_LEN_NAME, "%s/graphes/graph%d.txt", differentiator->dump_info.directory, differentiator->dump_info.num_dump);
+    snprintf(filename_graph, MAX_LEN_NAME, "%s/graphes/graph%d.txt", differentiator->dump_info.directory, differentiator->dump_info.num_html_dump);
 
     FILE* graph = fopen(filename_graph, "w");
     if (graph == NULL)
@@ -219,8 +235,8 @@ Tree_status GenerateGraph(Differentiator* differentiator, Tree_node* tree_node) 
 }
 
 void PrintNodeToDot(Differentiator* differentiator, FILE *file, Tree_node* tree_node) {
+    assert(differentiator);
     assert(file);
-    assert(tree_node);
 
     if (tree_node->type == NUMBER) {
         fprintf(file, "    node_%p [label=\"{%p | type = Number | value = %lg | left = %p | right = %p}\"];\n", 
@@ -251,6 +267,8 @@ void PrintNodeToDot(Differentiator* differentiator, FILE *file, Tree_node* tree_
 }
 
 void PrintErrors(int error, FILE* stream) {
+    assert(stream);
+
     if (error == SUCCESS                  ) fprintf(stream, "ALL_RIGHT\n");
     if (error == NULL_POINTER_ON_TREE     ) fprintf(stream, "Null pointer on tree\n");
     if (error == NULL_POINTER_ON_NODE     ) fprintf(stream, "Null pointer on node\n");
@@ -264,4 +282,329 @@ void PrintErrors(int error, FILE* stream) {
     if (error == PARENT_AND_CHILD_UNEQUAL ) fprintf(stream, "Parent's chils is unequal with current node\n");
     if (error == WRONG_ROOT               ) fprintf(stream, "Node is root, but its parent isn't NULL\n");
     if (error == WRONG_NODE               ) fprintf(stream, "Node isn't root, but its parent is NULL\n");
+}
+
+Tree_status CreateTexFileForDump(Differentiator* differentiator) {
+    assert(differentiator);
+
+    FILE* tex_dump_file = fopen(differentiator->dump_info.tex_dump_filename, "w");
+
+    if (tex_dump_file == NULL)
+        TREE_CHECK_AND_RETURN_ERRORS(OPEN_ERROR);
+
+    fprintf(tex_dump_file, "\\documentclass[12pt]{article}\n");
+    fprintf(tex_dump_file, "\\usepackage[utf8]{inputenc}\n");
+    // fprintf(tex_dump_file, "\\usepackage[english,russian]{babel}\n");
+    fprintf(tex_dump_file, "\\usepackage{amsmath}\n");
+    fprintf(tex_dump_file, "\\usepackage{autobreak}\n");
+    fprintf(tex_dump_file, "\\allowdisplaybreaks\n");
+    fprintf(tex_dump_file, "\\title{Процесс дифференцирования}\n");
+    fprintf(tex_dump_file, "\\begin{document}\n");
+
+    differentiator->dump_info.tex_dump_file = tex_dump_file;
+
+    return SUCCESS;
+}
+
+Tree_status TreeTexDump(Differentiator* differentiator, Tree_node* old_tree_root, Tree_node* new_tree_root, char* variable) {
+    assert(differentiator);
+    assert(differentiator->dump_info.tex_dump_file);
+
+    fprintf(differentiator->dump_info.tex_dump_file, "\\subsection{}\n");
+    fprintf(differentiator->dump_info.tex_dump_file, "\\begin{math}\n");
+    // fprintf(differentiator->dump_info.tex_dump_file, "\\begin{autobreak}\n");
+    fprintf(differentiator->dump_info.tex_dump_file, "\\frac{d}{d%s} ( ", variable);
+    PrintExpressionToTex(differentiator, old_tree_root, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);
+    fprintf(differentiator->dump_info.tex_dump_file, ") = ");
+    PrintExpressionToTex(differentiator, new_tree_root, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);
+    // fprintf(differentiator->dump_info.tex_dump_file, "\n\\end{autobreak}\n");
+    fprintf(differentiator->dump_info.tex_dump_file, "\\end{math}\n");
+    fprintf(differentiator->dump_info.tex_dump_file, "\\vspace{10pt}\n\n");
+    
+
+    // fprintf(differentiator->dump_info.tex_dump_file, "\\\\\n");
+
+    return SUCCESS;
+}
+
+#define PRINT_OPERATOR_TO_TEX(sign)                                                                          \
+{                                                                                                            \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1); \
+    fprintf(tex_dump_file, sign);                                                                            \
+    PrintExpressionToTex(differentiator, tree_node->right_node, tex_dump_file, current_prioritet, depth + 1);\
+    break;                                                                                                   \
+}      
+
+#define PRINT_ADD_OPERATOR_TO_TX                                                                            \
+{                                                                                                           \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
+    if (depth > 2) {                                                                                        \
+        fprintf(tex_dump_file, " + \\\\\n");                                                                \
+        depth = 0;                                                                                          \
+    }                                                                                                       \
+    else {                                                                                                  \
+        fprintf(tex_dump_file, " + ");                                                                      \
+    }                                                                                                       \
+    PrintExpressionToTex(differentiator, tree_node->right_node, tex_dump_file, current_prioritet, depth + 1);\
+    break;                                                                                                  \
+}
+
+#define PRINT_DIV_OPERATOR_TO_TEX                                                                            \
+{                                                                                                            \
+    fprintf(tex_dump_file, "\\frac{");                                                                       \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1); \
+    fprintf(tex_dump_file, "}{");                                                                            \
+    PrintExpressionToTex(differentiator, tree_node->right_node, tex_dump_file, current_prioritet, depth + 1);\
+    fprintf(tex_dump_file, "}");                                                                             \
+    break;                                                                                                   \
+}                                                                                       
+
+#define PRINT_POW_OPERATOR_TO_TEX                                                                            \
+{                                                                                                            \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1); \
+    fprintf(tex_dump_file, "^{");                                                                            \
+    PrintExpressionToTex(differentiator, tree_node->right_node, tex_dump_file, current_prioritet, depth + 1);\
+    fprintf(tex_dump_file, "}");                                                                             \
+    break;                                                                                                   \
+}         
+
+#define PRINT_LN_OPERATOR_TO_TEX                                                                            \
+{                                                                                                           \
+    fprintf(tex_dump_file, "\\ln(");                                                                        \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
+    fprintf(tex_dump_file, ")");                                                                            \
+    break;                                                                                                  \
+}    
+
+#define PRINTF_LOG_OPERATOR_TO_TEX                                                                          \
+{                                                                                                           \
+    fprintf(tex_dump_file, "\\log(");                                                                       \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
+    fprintf(tex_dump_file, ")");                                                                            \
+    break;                                                                                                  \
+}
+
+#define PRINTF_SIN_OPERATOR_TO_TEX                                                                          \
+{                                                                                                           \
+    fprintf(tex_dump_file, "\\sin(");                                                                       \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
+    fprintf(tex_dump_file, ")");                                                                            \
+    break;                                                                                                  \
+}                                                                                                           \
+
+#define PRINTF_COS_OPERATOR_TO_TEX                                                                          \
+{                                                                                                           \
+    fprintf(tex_dump_file, "\\cos(");                                                                       \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
+    fprintf(tex_dump_file, ")");                                                                            \
+    break;                                                                                                  \
+}
+
+#define PRINTF_TG_OPERATOR_TO_TEX                                                                           \
+{                                                                                                           \
+    fprintf(tex_dump_file, "\\tan(");                                                                       \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
+    fprintf(tex_dump_file, ")");                                                                            \
+    break;                                                                                                  \
+}
+
+#define PRINTF_CTG_OPERATOR_TO_TEX                                                                          \
+{                                                                                                           \
+    fprintf(tex_dump_file, "\\cot(");                                                                       \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
+    fprintf(tex_dump_file, ")");                                                                            \
+    break;                                                                                                  \
+}
+
+#define PRINTF_ARCSIN_OPERATOR_TO_TEX                                                                       \
+{                                                                                                           \
+    fprintf(tex_dump_file, "\\arcsin(");                                                                    \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
+    fprintf(tex_dump_file, ")");                                                                            \
+    break;                                                                                                  \
+}
+
+#define PRINTF_ARCCOS_OPERATOR_TO_TEX                                                                       \
+{                                                                                                           \
+    fprintf(tex_dump_file, "\\arccos(");                                                                    \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
+    fprintf(tex_dump_file, ")");                                                                            \
+    break;                                                                                                  \
+}
+
+#define PRINTF_ARCTG_OPERATOR_TO_TEX                                                                        \
+{                                                                                                           \
+    fprintf(tex_dump_file, "\\arctan(");                                                                    \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
+    fprintf(tex_dump_file, ")");                                                                            \
+    break;                                                                                                  \
+}
+
+#define PRINTF_ARCCTG_OPERATOR_TO_TEX                                                                       \
+{                                                                                                           \
+    fprintf(tex_dump_file, "\\arccot(");                                                                    \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
+    fprintf(tex_dump_file, ")");                                                                            \
+    break;                                                                                                  \
+}
+
+#define PRINTF_SH_OPERATOR_TO_TEX                                                                           \
+{                                                                                                           \
+    fprintf(tex_dump_file, "\\sinh(");                                                                      \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
+    fprintf(tex_dump_file, ")");                                                                            \
+    break;                                                                                                  \
+}
+
+#define PRINTF_CH_OPERATOR_TO_TEX                                                                           \
+{                                                                                                           \
+    fprintf(tex_dump_file, "\\cosh(");                                                                      \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
+    fprintf(tex_dump_file, ")");                                                                            \
+    break;                                                                                                  \
+}
+
+#define PRINTF_TH_OPERATOR_TO_TEX                                                                           \
+{                                                                                                           \
+    fprintf(tex_dump_file, "\\tanh(");                                                                      \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
+    fprintf(tex_dump_file, ")");                                                                            \
+    break;                                                                                                  \
+}
+
+#define PRINTF_CTH_OPERATOR_TO_TEX                                                                          \
+{                                                                                                           \
+    fprintf(tex_dump_file, "\\arccot(");                                                                    \
+    PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
+    fprintf(tex_dump_file, ")");                                                                            \
+    break;                                                                                                  \
+}
+
+
+void PrintExpressionToTex(Differentiator* differentiator, Tree_node* tree_node, FILE* tex_dump_file, Prioritets parent_prioritet, int depth) {
+    assert(differentiator);
+    assert(tree_node);
+    assert(tex_dump_file);
+
+    Prioritets current_prioritet = GetPrioritet(tree_node);
+
+    if (current_prioritet < parent_prioritet && current_prioritet != NO_PRIORITET)
+        fprintf(tex_dump_file, "(");
+
+    switch (tree_node->type) {
+        case NUMBER:
+            if (tree_node->value.number < 0)
+                fprintf(tex_dump_file, "(%lg)", tree_node->value.number);
+            else
+                fprintf(tex_dump_file, "%lg", tree_node->value.number);
+            break; 
+        case VARIABLE:
+            fprintf(tex_dump_file, "%s", NameOfVariable(differentiator, tree_node));
+            break;
+        case OPERATOR:
+            switch(tree_node->value.operators) {
+                case OPERATOR_ADD:
+                    // PRINT_ADD_OPERATOR_TO_TX;
+                    PRINT_OPERATOR_TO_TEX(" + ");
+                case OPERATOR_SUB:
+                    PRINT_OPERATOR_TO_TEX(" - ");
+                case OPERATOR_MUL:
+                    PRINT_OPERATOR_TO_TEX(" \\cdot ");
+                case OPERATOR_DIV:
+                    PRINT_DIV_OPERATOR_TO_TEX;
+                case OPERATOR_POW:
+                    PRINT_POW_OPERATOR_TO_TEX;
+                case OPERATOR_LN:
+                    PRINT_LN_OPERATOR_TO_TEX;
+                case OPERATOR_LOG:
+                    PRINTF_LOG_OPERATOR_TO_TEX;
+                case OPERATOR_SIN:
+                    PRINTF_SIN_OPERATOR_TO_TEX;
+                case OPERATOR_COS:
+                    PRINTF_COS_OPERATOR_TO_TEX;
+                case OPERATOR_TG:
+                    PRINTF_TG_OPERATOR_TO_TEX;
+                case OPERATOR_CTG:
+                    PRINTF_CTG_OPERATOR_TO_TEX;
+                case OPERATOR_ARCSIN:
+                    PRINTF_ARCSIN_OPERATOR_TO_TEX;
+                case OPERATOR_ARCCOS:
+                    PRINTF_ARCCOS_OPERATOR_TO_TEX;
+                case OPERATOR_ARCTG:
+                    PRINTF_ARCTG_OPERATOR_TO_TEX;
+                case OPERATOR_ARCCTG:
+                    PRINTF_ARCCTG_OPERATOR_TO_TEX;
+                case OPERATOR_SH:
+                    PRINTF_SH_OPERATOR_TO_TEX;
+                case OPERATOR_CH:
+                    PRINTF_CH_OPERATOR_TO_TEX;
+                case OPERATOR_TH:
+                    PRINTF_TH_OPERATOR_TO_TEX;
+                case OPERATOR_CTH:
+                    PRINTF_CTH_OPERATOR_TO_TEX;
+                case WRONG_OPERATOR:
+                default: break;
+            }
+        case WRONG_TYPE:
+        default:
+            break;
+    }
+
+    if (current_prioritet < parent_prioritet && current_prioritet != NO_PRIORITET)
+        fprintf(tex_dump_file, ")");
+}
+
+Prioritets GetPrioritet(Tree_node* tree_node) {
+    assert(tree_node);
+
+    if (tree_node->type == OPERATOR) {
+        switch (tree_node->value.operators) {
+            case OPERATOR_ADD:
+            case OPERATOR_SUB:
+                return LOW_PRIOTITET;
+            case OPERATOR_MUL:
+            case OPERATOR_DIV:
+                return MIDDLE_PRIORITET;
+            case OPERATOR_POW:
+                return HIGH_PRIORITET;
+            case OPERATOR_LN: 
+            case OPERATOR_LOG:
+            case OPERATOR_SIN:
+            case OPERATOR_COS:
+            case OPERATOR_TG: 
+            case OPERATOR_CTG:
+            case OPERATOR_ARCSIN: 
+            case OPERATOR_ARCCOS: 
+            case OPERATOR_ARCTG: 
+            case OPERATOR_ARCCTG: 
+            case OPERATOR_SH:
+            case OPERATOR_CH:
+            case OPERATOR_TH:
+            case OPERATOR_CTH:
+                return HIGHEST_PRIORITET; 
+            case WRONG_OPERATOR:
+            default: return NO_PRIORITET;
+        }
+    }
+
+    else {
+        return NO_PRIORITET;
+    }
+}
+
+Tree_status ClostTexFileForDump(Differentiator* differentiator) {
+    assert(differentiator);
+    assert(differentiator->dump_info.tex_dump_file);
+
+    fprintf(differentiator->dump_info.tex_dump_file, "\\end{document}\n");
+
+    if (fclose(differentiator->dump_info.tex_dump_file) == EOF)                                             
+        TREE_CHECK_AND_RETURN_ERRORS(CLOSE_ERROR,      perror("Error is: "));
+
+    char command[MAX_LEN_NAME] = {};
+    snprintf(command, MAX_LEN_NAME, "pdflatex %s", differentiator->dump_info.tex_dump_filename);
+    if (system(command) != 0)
+        TREE_CHECK_AND_RETURN_ERRORS(EXECUTION_FAILED);
+
+    return SUCCESS;
 }

@@ -60,5 +60,15 @@ void PrintNodeToDot(Differentiator* differentiator, FILE *file, Tree_node* tree_
 
 void PrintErrors(int error, FILE* stream);
 
+Tree_status CreateTexFileForDump(Differentiator* differentiator);
+
+Tree_status TreeTexDump(Differentiator* differentiator, Tree_node* old_tree_root, Tree_node* new_tree_root, char* variable);
+
+void PrintExpressionToTex(Differentiator* differentiator, Tree_node* tree_node, FILE* tex_dump_file, Prioritets parent_prioritet, int depth);
+
+Prioritets GetPrioritet(Tree_node* tree_node);
+
+Tree_status ClostTexFileForDump(Differentiator* differentiator);
+
 
 #endif // TREE_H_
