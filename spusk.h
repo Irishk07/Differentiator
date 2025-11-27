@@ -1,42 +1,23 @@
 #ifndef SPUSK_H_
 #define SPUSK_H_
 
-#define CHECK_AND_RETURN_ERRORS(error, ...)                          \
-        {                                                                 \
-            status now_error = (error);                              \
-            if (now_error != ALL_RIGHT) {                                   \
-                fprintf(stderr, "Error is: %d, %d\n", (error), __LINE__); \
-                __VA_ARGS__;                                              \
-                return now_error;                                         \
-            }                                                             \
-        }
 
+Tree_node* GetComandir(Tree_status* status, const char* file_name);
 
-enum status {
-    ALL_RIGHT = 0,
-    NOT_END_SYMBOL = 1,
-    NOT_NUMBER = 2,
-    NOT_END_SKOBKA = 3,
-    OPEN_ERRORS = 4,
-    STAT_ERRORS = 5,
-    MEMORY_ERRORS = 6,
-    READ_ERRORS = 7
-};
+Tree_node* GetExpression(char** str, Tree_status* status);
 
+Tree_node* GetTerm(char** str, Tree_status* status);
 
-status GetComandir(int* val, const char* file_name);
+Tree_node* GetP(char** str, Tree_status* status);
 
-status GetExpression(char** str, int* val);
+Tree_node* GetNumber(char** str, Tree_status* status);
 
-status GetTerm(char** str, int* val);
-
-status GetP(char** str, int* val);
-
-status GetNumber(char** str, int* val);
+Tree_node* SpuskNodeCtor(Type_node type, type_t value,
+                    Tree_node* left_node, Tree_node* right_node);
 
 int SpuskSizeOfText(const char *text_name);
 
-status SpuskReadOnegin(char** str, const char* name_file);
+Tree_status SpuskReadOnegin(char** str, const char* name_file);
 
 
 #endif // SPUSK_H_

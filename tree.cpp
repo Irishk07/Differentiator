@@ -310,7 +310,7 @@ Tree_status TreeTexDump(Differentiator* differentiator, Tree_node* old_tree_root
     assert(differentiator);
     assert(differentiator->dump_info.tex_dump_file);
 
-    fprintf(differentiator->dump_info.tex_dump_file, "\\subsection{}\n");
+    fprintf(differentiator->dump_info.tex_dump_file, "\\subsection*{RESULT!!!}\n");
     fprintf(differentiator->dump_info.tex_dump_file, "\\begin{math}\n");
     // fprintf(differentiator->dump_info.tex_dump_file, "\\begin{autobreak}\n");
     fprintf(differentiator->dump_info.tex_dump_file, "\\frac{d}{d%s} ( ", variable);

@@ -3,109 +3,140 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 
+#include "common.h"
 #include "spusk.h"
+#include "tree.h"
 
 // TODO написать в текстовый файл грамматику
 
-status GetComandir(int* val, const char* file_name) {
-    assert(val);
+Tree_node* GetComandir(Tree_status* status, const char* file_name) {
+    assert(status);
     assert(file_name);
 
     char* str = NULL;
     SpuskReadOnegin(&str, file_name);
     char* temp = str;
 
-    CHECK_AND_RETURN_ERRORS(GetExpression(&str, val));
+    Tree_node* new_node = GetExpression(&str, status);
 
-    if (*str != '$')
-        CHECK_AND_RETURN_ERRORS(NOT_END_SYMBOL);
+    if (*str != '$') {
+        *status = NOT_END_SYMBOL;
+        return NULL;
+    }
 
     free(temp);
 
-    return ALL_RIGHT;
+    return new_node;
 }
 
-status GetExpression(char** str, int* val) {
+Tree_node* GetExpression(char** str, Tree_status* status) {
     assert(str);
     assert(*str);
+    assert(status);
 
-    CHECK_AND_RETURN_ERRORS(GetTerm(str, val));
+    Tree_node* new_node = GetTerm(str, status);
 
     while (**str == '+' || **str == '-') {
         int cur_operator = (**str);
         (*str)++;
 
-        int val2 = 0;
-        CHECK_AND_RETURN_ERRORS(GetTerm(str, &val2));
+        Tree_node* new_node_2 = GetTerm(str, status);
 
         if (cur_operator == '+')
-            *val += val2;
+            return SpuskNodeCtor(OPERATOR, (type_t){.operators = OPERATOR_ADD}, new_node, new_node_2);
         else 
-            *val -= val2;
+            return SpuskNodeCtor(OPERATOR, (type_t){.operators = OPERATOR_SUB}, new_node, new_node_2);
+
+        new_node = new_node_2;
     }
 
-    return ALL_RIGHT;
+    return NULL;
 }
 
-status GetTerm(char** str, int* val) {
+Tree_node* GetTerm(char** str, Tree_status* status) {
     assert(str);
     assert(*str);
 
-    CHECK_AND_RETURN_ERRORS(GetP(str, val));
+    Tree_node* new_node = GetP(str, status);
+
+    fprintf(stderr, "%lg\n", new_node->value.number);
 
     while (**str == '*' || **str == '/') {
         int cur_operator = (**str);
         (*str)++;
 
-        int val2 = 0;
-        CHECK_AND_RETURN_ERRORS(GetP(str, &val2));
+        Tree_node* new_node_2 = GetP(str, status);
         if (cur_operator == '*')
-            *val *= val2;
+            return SpuskNodeCtor(OPERATOR, (type_t){.operators = OPERATOR_MUL}, new_node, new_node_2);
         else 
-            *val /= val2;
+            return SpuskNodeCtor(OPERATOR, (type_t){.operators = OPERATOR_DIV}, new_node, new_node_2);
     }
 
-    return ALL_RIGHT;
+    return new_node;
 }
 
-status GetP(char** str, int* val) {
+Tree_node* GetP(char** str, Tree_status* status) {
     assert(str);
     assert(*str);
+    
+    Tree_node* tree_node = NULL;
 
     if (**str == '(') {
         (*str)++;
-        CHECK_AND_RETURN_ERRORS(GetExpression(str, val));
+        tree_node = GetExpression(str, status);
 
         if (**str != ')')
-            CHECK_AND_RETURN_ERRORS(NOT_END_SKOBKA);
+            *status = NOT_END_SKOBKA;
 
         (*str)++;
     }
 
-    else 
-        CHECK_AND_RETURN_ERRORS(GetNumber(str, val));
+    else {
+        tree_node = GetNumber(str, status);
+        fprintf(stderr, "%lg\n", tree_node->value.number);
+    }
 
-    return ALL_RIGHT;
+    return tree_node;
 }
 
-status GetNumber(char** str, int* val) {
+Tree_node* GetNumber(char** str, Tree_status* status) {
     assert(str);
     assert(*str);
 
     char* old_str = *str;
+    double val = 0;
+
+    Tree_node* tree_node = NULL;
 
     while ('0' <= **str && **str <= '9') {
-        *val = *val * 10 + (**str - '0');
+        val = val * 10 + (**str - '0');
         (*str)++;
     }
 
     if (old_str == *str)
-        CHECK_AND_RETURN_ERRORS(NOT_NUMBER);
+        *status = NOT_NUMBER;
 
-    return ALL_RIGHT;
+    else 
+        tree_node = SpuskNodeCtor(NUMBER, (type_t){.number = val}, NULL, NULL);
+
+    return tree_node;
 }
 
 
+Tree_node* SpuskNodeCtor(Type_node type, type_t value,
+                    Tree_node* left_node, Tree_node* right_node) {
+
+    Tree_node* new_node = (Tree_node*)calloc(1, sizeof(Tree_node));
+    if (new_node == NULL)
+        return NULL;
+
+    new_node->left_node  = left_node;
+    new_node->right_node = right_node;
+    new_node->type       = type;
+    new_node->value      = value;
+
+    return new_node;
+}
 
 int SpuskSizeOfText(const char *text_name) {
     assert(text_name);
@@ -121,29 +152,29 @@ int SpuskSizeOfText(const char *text_name) {
     return (int)text_info.st_size;
 }
 
-status SpuskReadOnegin(char** str, const char* name_file) {
+Tree_status SpuskReadOnegin(char** str, const char* name_file) {
     assert(name_file != NULL);
     assert(str);    
 
     FILE *text = fopen(name_file, "r");
     if (text == NULL) {
         perror("Error is");
-        return OPEN_ERRORS;
+        return OPEN_ERROR;
     }
 
     int size = SpuskSizeOfText(name_file);
     if (size == -1) {
-        return STAT_ERRORS;
+        return STAT_ERROR;
     }
 
     *str = (char*)calloc((size_t)size, sizeof(char));
     if (str == NULL)
-        CHECK_AND_RETURN_ERRORS(MEMORY_ERRORS);
+        TREE_CHECK_AND_RETURN_ERRORS(MEMORY_ERROR);
 
     fread((char *)*str, sizeof(char), (size_t)size, text);
     if (ferror(text) != 0) {
-        CHECK_AND_RETURN_ERRORS(READ_ERRORS,    free(*str));
+        TREE_CHECK_AND_RETURN_ERRORS(READ_ERROR,    free(*str));
     }
 
-    return ALL_RIGHT;
+    return SUCCESS;
 }

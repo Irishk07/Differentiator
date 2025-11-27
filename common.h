@@ -71,7 +71,10 @@ enum Tree_status {
     SYNTAX_ERROR             = 14,
     BUFFER_OVERFLOW          = 15,
     STAT_ERROR               = 16,
-    INPUT_ERROR              = 17
+    INPUT_ERROR              = 17,
+    NOT_END_SYMBOL           = 18,
+    NOT_END_SKOBKA           = 19,
+    NOT_NUMBER               = 20
 };
 
 enum Status_of_finding {
