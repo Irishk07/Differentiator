@@ -34,20 +34,31 @@ Tree_status Differentiation(Differentiator* differentiator) {
 
         TREE_CHECK_AND_RETURN_ERRORS(ArrayPushtrees(&differentiator->array_with_trees, new_tree),   free(variable););
 
-        fprintf(differentiator->dump_info.tex_dump_file, "\\begin{math}\n");
+        fprintf(differentiator->dump_info.tex_dump_file, "\\begin{center}");
+        fprintf(differentiator->dump_info.tex_dump_file, "\\textbf{Промуррифицируем следующее выражение:}\\\\\n");
+        fprintf(differentiator->dump_info.tex_dump_file, "\\begin{math}\n\\underline{");
+        PrintExpressionToTex(differentiator, old_tree_root, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);
+        fprintf(differentiator->dump_info.tex_dump_file, "}\\end{math}\n");
+        fprintf(differentiator->dump_info.tex_dump_file, "\\end{center}");
         
+        fprintf(differentiator->dump_info.tex_dump_file, "\\begin{math}\n");
         new_tree->root = DifferentiationFunctions(differentiator, old_tree_root, variable);
 
         fprintf(differentiator->dump_info.tex_dump_file, "\\end{math}\n");
-        (differentiator->dump_info.tex_dump_file, "\\vspace{10pt}\n\n");
 
         TreeHTMLDump(differentiator, PointerOnTree(differentiator)->root, DUMP_INFO, NOT_ERROR_DUMP);
 
-        // TreeTexDump(differentiator, old_tree_root, new_tree->root, variable);
+        fprintf(differentiator->dump_info.tex_dump_file, "\\begin{center}\n");
+        fprintf(differentiator->dump_info.tex_dump_file, "\\textbf{Результат муррифицирования:}\n\n");
+        TreeTexDump(differentiator, old_tree_root, new_tree->root, variable);
+        fprintf(differentiator->dump_info.tex_dump_file, "\\end{center}\n");
 
         OptimizationTree(differentiator, &new_tree->root, variable);
 
+        fprintf(differentiator->dump_info.tex_dump_file, "\\begin{center}\n");
+        fprintf(differentiator->dump_info.tex_dump_file, "\\textbf{После оптимизациии:}\n\n");
         TreeTexDump(differentiator, old_tree_root, new_tree->root, variable);
+        fprintf(differentiator->dump_info.tex_dump_file, "\\end{center}\n");
     }
 
     ClostTexFileForDump(differentiator);
@@ -82,168 +93,9 @@ Tree_status Differentiation(Differentiator* differentiator) {
 #define TH_(left)  NodeCtor(tree, OPERATOR, (type_t){.operators = OPERATOR_TH}, left, NULL)
 #define CTH_(left)  NodeCtor(tree, OPERATOR, (type_t){.operators = OPERATOR_CTH}, left, NULL)
 
-#define TEX_ADD                                                                                                         \
-fprintf(differentiator->dump_info.tex_dump_file, "\\frac{d}{d%s} ( ", variable);                                        \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") + \\frac{d}{d%s} ( ", variable);                                    \
-PrintExpressionToTex(differentiator, tree_node->right_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);  \
-fprintf(differentiator->dump_info.tex_dump_file, ")\\\\\n");
-
-#define TEX_SUB                                                                                                         \
-fprintf(differentiator->dump_info.tex_dump_file, "\\frac{d}{d%s} ( ", variable);                                        \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") - \\frac{d}{d%s} ( ", variable);                                    \
-PrintExpressionToTex(differentiator, tree_node->right_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);  \
-fprintf(differentiator->dump_info.tex_dump_file, ")\\\\\n");
-
-#define TEX_MUL                                                                                                         \
-fprintf(differentiator->dump_info.tex_dump_file, "\\frac{d}{d%s}(", variable);                                          \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\cdot (");                                                         \
-PrintExpressionToTex(differentiator, tree_node->right_node,  differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0); \
-fprintf(differentiator->dump_info.tex_dump_file, ") + (");                                                              \
-PrintExpressionToTex(differentiator, tree_node->left_node,  differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);  \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\cdot \\frac{d}{d%s}(", variable);                                 \
-PrintExpressionToTex(differentiator, tree_node->right_node,  differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0); \
-fprintf(differentiator->dump_info.tex_dump_file, ")\\\\\n");
-
-#define TEX_DIV                                                                                                         \
-fprintf(differentiator->dump_info.tex_dump_file, "\\frac{ \\frac{d}{d%s}(", variable);                                  \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\cdot (");                                                         \
-PrintExpressionToTex(differentiator, tree_node->right_node,  differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0); \
-fprintf(differentiator->dump_info.tex_dump_file, ") - (");                                                              \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\cdot \\frac{d}{d%s}(", variable);                                 \
-PrintExpressionToTex(differentiator, tree_node->right_node,  differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0); \
-fprintf(differentiator->dump_info.tex_dump_file, ") }{ (");                                                             \
-PrintExpressionToTex(differentiator, tree_node->right_node,  differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0); \
-fprintf(differentiator->dump_info.tex_dump_file, ")^2 }\\\\\n");                                                        
-
-#define TEX_POW_X_N                                                                                                                                 \
-fprintf(differentiator->dump_info.tex_dump_file, "%g \\cdot (", Calculating(differentiator, tree_node->right_node));                                \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);                               \
-fprintf(differentiator->dump_info.tex_dump_file, ")^{%g} \\cdot \\frac{d}{d%s}(", Calculating(differentiator, tree_node->right_node) - 1, variable);\
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);                               \
-fprintf(differentiator->dump_info.tex_dump_file, ")\\\\\n");
-
-#define TEX_POW_X_X                                                                                                     \
-fprintf(differentiator->dump_info.tex_dump_file, "(");                                                                  \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ")^{");                                                                \
-PrintExpressionToTex(differentiator, tree_node->right_node,  differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0); \
-fprintf(differentiator->dump_info.tex_dump_file, "} \\cdot \\frac{d}{d%s}(", variable);                                 \
-PrintExpressionToTex(differentiator, tree_node->right_node,  differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0); \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\cdot \\ln(");                                                     \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") + \\frac{");                                                        \
-PrintExpressionToTex(differentiator, tree_node->right_node,  differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0); \
-fprintf(differentiator->dump_info.tex_dump_file, " \\cdot \\frac{d}{d%s}(", variable);                                  \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ")}{");                                                                \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, "}\\\\\n");  
-
-#define TEX_LN                                                                                                          \
-fprintf(differentiator->dump_info.tex_dump_file, "\\frac{1}{");                                                         \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, "} \\cdot \\frac{d}{d%s}(", variable);                                 \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ")\\\\\n");
-
-#define TEX_LOG                                                                                                         \
-fprintf(differentiator->dump_info.tex_dump_file, "\\frac{1}{");                                                         \
-PrintExpressionToTex(differentiator, tree_node->right_node,  differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0); \
-fprintf(differentiator->dump_info.tex_dump_file, " \\cdot \\ln(");                                                      \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") } \\cdot \\frac{d}{d%s}(", variable);                               \
-PrintExpressionToTex(differentiator, tree_node->right_node,  differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0); \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\\\\n");
-
-#define TEX_SIN                                                                                                         \
-fprintf(differentiator->dump_info.tex_dump_file, "\\cos(");                                                             \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\cdot \\frac{d}{d%s}(", variable);                                 \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\\\\n");
-
-#define TEX_COS                                                                                                         \
-fprintf(differentiator->dump_info.tex_dump_file, "-\\sin(");                                                            \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\cdot \\frac{d}{d%s}(", variable);                                 \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\\\\n");
-
-#define TEX_TG                                                                                                          \
-fprintf(differentiator->dump_info.tex_dump_file, "\\frac{1}{\\cos^2(");                                                 \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ")} \\cdot \\frac{d}{d%s}(", variable);                                \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\\\\n");
-
-#define TEX_CTG                                                                                                         \
-fprintf(differentiator->dump_info.tex_dump_file, "-\\frac{1}{\\sin^2(");                                                \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ")} \\cdot \\frac{d}{d%s}(", variable);                                \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\\\\n");
-
-#define TEX_ARCSIN                                                                                                      \
-fprintf(differentiator->dump_info.tex_dump_file, "\\frac{1}{\\sqrt{1 - (");                                             \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ")^2}} \\cdot \\frac{d}{d%s}(", variable);                             \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\\\\n");
-
-#define TEX_ARCCOS                                                                                                      \
-fprintf(differentiator->dump_info.tex_dump_file, "-\\frac{1}{\\sqrt{1 - (");                                            \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ")^2}} \\cdot \\frac{d}{d%s}(", variable);                             \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\\\n");
-
-#define TEX_ARCTG                                                                                                       \
-fprintf(differentiator->dump_info.tex_dump_file, "\\frac{1}{1 + (");                                                    \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ")^2} \\cdot \\frac{d}{d%s}(", variable);                              \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\\\\n");
-
-#define TEX_ARCCTG                                                                                                      \
-fprintf(differentiator->dump_info.tex_dump_file, "-\\frac{1}{1 + (");                                                   \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ")^2} \\cdot \\frac{d}{d%s}(", variable);                              \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\\\\n");
-
-#define TEX_SH                                                                                                          \
-fprintf(differentiator->dump_info.tex_dump_file, "\\ch(");                                                              \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\cdot \\frac{d}{d%s}(", variable);                                 \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\\\\n");
-
-#define TEX_CH                                                                                                          \
-fprintf(differentiator->dump_info.tex_dump_file, "\\sh(");                                                              \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\cdot \\frac{d}{d%s}(", variable);                                 \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\\\\n");
-
-#define TEX_TH                                                                                                          \
-fprintf(differentiator->dump_info.tex_dump_file, "\\frac{1}{\\ch^2(");                                                  \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ")} \\cdot \\frac{d}{d%s}(", variable);                                \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\\\\n");
-
-#define TEX_CTH                                                                                                         \
-fprintf(differentiator->dump_info.tex_dump_file, "-\\frac{1}{\\sh^2(");                                                 \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ")} \\cdot \\frac{d}{d%s}(", variable);                                \
-PrintExpressionToTex(differentiator, tree_node->left_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);   \
-fprintf(differentiator->dump_info.tex_dump_file, ") \\\\\n");
-
+#define DIFFERENTIANTIONS_TO_TEX
+#include "tex.h"
+                                                                               
 
 Tree_node* DifferentiationFunctions(Differentiator* differentiator, Tree_node* tree_node, const char* variable) {
     assert(differentiator);
@@ -252,9 +104,8 @@ Tree_node* DifferentiationFunctions(Differentiator* differentiator, Tree_node* t
 
     Tree* tree = PointerOnTree(differentiator);
     Tree_node* new_node = NULL;
-
-    // fprintf(differentiator->dump_info.tex_dump_file, "\\subsection{}\n");
     
+    TEX_CONNECTING_PHRASES;
     fprintf(differentiator->dump_info.tex_dump_file, "\\frac{d}{d%s} ( ", variable);
     PrintExpressionToTex(differentiator, tree_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);
     fprintf(differentiator->dump_info.tex_dump_file, ") = ");
@@ -262,30 +113,31 @@ Tree_node* DifferentiationFunctions(Differentiator* differentiator, Tree_node* t
     if (tree_node->type == VARIABLE) {
         int result_compare = strcmp(NameOfVariable(differentiator, tree_node), variable);
 
-        if (result_compare != 0)
+        if (result_compare != 0) {
+            TEX_CONST;
             new_node = NodeCtor(tree, NUMBER, (type_t){.number = 0}, tree_node->left_node, tree_node->right_node);
-        
-        else 
+        }
+        else {
+            TEX_VARIABLE;
             new_node = NodeCtor(tree, NUMBER, (type_t){.number = 1}, tree_node->left_node, tree_node->right_node);
+        }
     }        
 
-    if (tree_node->type == NUMBER)
+    if (tree_node->type == NUMBER) {
+        TEX_CONST;
         new_node = NodeCtor(tree, NUMBER, (type_t){.number = 0}, tree_node->left_node, tree_node->right_node);
+    }
 
     if (tree_node->type == OPERATOR) {
         switch(tree_node->value.operators) {
             case OPERATOR_ADD:
                 TEX_ADD; new_node = ADD_(dL, dR); break;
-
             case OPERATOR_SUB:
                 TEX_SUB; new_node = SUB_(dL, dR); break;
-
             case OPERATOR_MUL:
                 TEX_MUL; new_node = ADD_(MUL_(dL, cR), MUL_(cL, dR)); break;
-
             case OPERATOR_DIV:
                 TEX_DIV; new_node = DIV_(SUB_(MUL_(dL, cR), MUL_(cL, dR)), POW_(cR, NUMBER_NODE_CTOR(2))); break;
-
             case OPERATOR_POW:
                 {
                 Status_of_finding find_in_left_node = ContainsVariable(differentiator, tree_node->left_node, variable);
@@ -298,54 +150,40 @@ Tree_node* DifferentiationFunctions(Differentiator* differentiator, Tree_node* t
                 }
                 break;
                 }
-
             case OPERATOR_LN:
                 TEX_LN; new_node = MUL_(DIV_(NUMBER_NODE_CTOR(1), cL), dL); break;
-                
             case OPERATOR_LOG:
                 TEX_LOG; new_node = MUL_(DIV_(NUMBER_NODE_CTOR(1), MUL_(cR, LN_(cL))), dR); break;
-                
             case OPERATOR_SIN:
                 TEX_SIN; new_node = MUL_(COS_(cL), dL); break;
-                
             case OPERATOR_COS:
                 TEX_COS; new_node = MUL_(MUL_(NUMBER_NODE_CTOR(-1), SIN_(cL)), dL); break;
-                
             case OPERATOR_TG:
                 TEX_TG; new_node = MUL_(DIV_(NUMBER_NODE_CTOR(1), POW_(COS_(cL), NUMBER_NODE_CTOR(2))), dL); break;
-                
             case OPERATOR_CTG:
                 TEX_CTG; new_node = MUL_(MUL_(NUMBER_NODE_CTOR(-1), DIV_(NUMBER_NODE_CTOR(1), POW_(SIN_(cL), NUMBER_NODE_CTOR(2)))), dL); break;
-                
             case OPERATOR_ARCSIN:
                 TEX_ARCSIN; new_node = MUL_(DIV_(NUMBER_NODE_CTOR(1), POW_(SUB_(NUMBER_NODE_CTOR(1), POW_(cL, NUMBER_NODE_CTOR(2))), NUMBER_NODE_CTOR(0.5))), dL); break;
-                
             case OPERATOR_ARCCOS:
                 TEX_ARCCOS; new_node = MUL_(MUL_(NUMBER_NODE_CTOR(-1), DIV_(NUMBER_NODE_CTOR(1), POW_(SUB_(NUMBER_NODE_CTOR(1), POW_(cL, NUMBER_NODE_CTOR(2))), NUMBER_NODE_CTOR(0.5)))), dL); break;
-                
             case OPERATOR_ARCTG:
                 TEX_ARCTG; new_node = MUL_(DIV_(NUMBER_NODE_CTOR(1), ADD_(NUMBER_NODE_CTOR(1), POW_(cL, NUMBER_NODE_CTOR(2)))), dL); break;
-                
             case OPERATOR_ARCCTG:
                 TEX_ARCCTG; new_node = MUL_(MUL_(NUMBER_NODE_CTOR(-1), DIV_(NUMBER_NODE_CTOR(1), ADD_(NUMBER_NODE_CTOR(1), POW_(cL, NUMBER_NODE_CTOR(2))))), dL); break;
-
             case OPERATOR_SH:
                 TEX_SH; new_node = MUL_(CH_(cL), dL); break;
-
             case OPERATOR_CH:
                 TEX_CH; new_node = MUL_(SH_(cL), dL); break;
-
             case OPERATOR_TH:
                 TEX_TH; new_node = MUL_(DIV_(NUMBER_NODE_CTOR(1), POW_(CH_(cL), NUMBER_NODE_CTOR(2))), dL); break;
-
             case OPERATOR_CTH:
                 TEX_CTH; new_node = MUL_(MUL_(NUMBER_NODE_CTOR(-1), DIV_(NUMBER_NODE_CTOR(1), POW_(SH_(cL), NUMBER_NODE_CTOR(2)))), dL); break;
-
             case WRONG_OPERATOR:
             default: return NULL;
         }
     }
 
+    TEX_CONNECTING_PHRASES;
     fprintf(differentiator->dump_info.tex_dump_file, "\\frac{d}{d%s} ( ", variable);
     PrintExpressionToTex(differentiator, tree_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);
     fprintf(differentiator->dump_info.tex_dump_file, ") = ");
@@ -354,6 +192,8 @@ Tree_node* DifferentiationFunctions(Differentiator* differentiator, Tree_node* t
 
     return new_node;
 }
+
+#undef DIFFERENTIATION_TO_TEX
 
 Tree_node* CopyPartOfTree(Differentiator* differentiator, Tree_node* old_node) {
     assert(differentiator);
@@ -374,6 +214,13 @@ Tree_node* CopyPartOfTree(Differentiator* differentiator, Tree_node* old_node) {
     new_node->right_node = CopyPartOfTree(differentiator, old_node->right_node);
 
     return new_node;
+}    
+
+void PrintfConnectingPhrases(Differentiator* differentiator) {
+    assert(differentiator);
+
+    size_t cur_index = (size_t)rand() % CNT_OF_PHRASES;
+    fprintf(differentiator->dump_info.tex_dump_file, "\\\\\\noindent %s\n\n", CONNECTING_PHRASES[cur_index]);
 }
 
 Status_of_finding ContainsVariable(Differentiator* differentiator, Tree_node* tree_node, const char* variable) {
@@ -449,6 +296,65 @@ void OptimizationNode(Differentiator* differentiator, Tree_node** old_node, cons
         return;
     }
 
+    OptimizationOneNode(differentiator, tree, old_node);
+
+    OptimizationZeroNode(differentiator, tree, old_node);
+}
+
+void OptimizationZeroNode(Differentiator* differentiator, Tree* tree, Tree_node** old_node) {
+    assert(differentiator);
+    assert(old_node);
+
+    if (IsZeroNode((*old_node)->left_node)) {
+        switch ((*old_node)->value.operators) {
+                case OPERATOR_ADD:
+                case OPERATOR_SUB:
+                    {
+                        Tree_node* right_child = (*old_node)->right_node;
+                        DifferentiatorNodeDtor(differentiator, (*old_node)->left_node);
+                        free((*old_node));
+                        (*old_node) = right_child;
+                        return;
+                    }
+                case OPERATOR_POW:
+                    {
+                        DifferentiatorNodeDtor(differentiator, (*old_node)->left_node);
+                        (*old_node) = NUMBER_NODE_CTOR(1.0);
+                        return;
+                    }
+                default:
+                    break;
+                }
+    }
+
+    if (IsZeroNode((*old_node)->right_node)) {
+        switch ((*old_node)->value.operators) {
+            case OPERATOR_ADD:
+            case OPERATOR_SUB:
+                {
+                    Tree_node* left_child = (*old_node)->left_node;
+                    DifferentiatorNodeDtor(differentiator, (*old_node)->right_node);
+                    free((*old_node));
+                    (*old_node) = left_child;
+                    return;
+                }
+            case OPERATOR_POW:
+                {
+                    DifferentiatorNodeDtor(differentiator, (*old_node)->right_node);
+                    free((*old_node));
+                    (*old_node) = NUMBER_NODE_CTOR(1.0);
+                    return;
+                }
+            default:
+                break;
+            }
+    }
+}
+
+void OptimizationOneNode(Differentiator* differentiator, Tree* tree, Tree_node** old_node) {
+    assert(differentiator);
+    assert(old_node);
+
     if (IsOneNode((*old_node)->left_node)) {
         switch ((*old_node)->value.operators) {
             case OPERATOR_MUL:
@@ -480,52 +386,7 @@ void OptimizationNode(Differentiator* differentiator, Tree_node** old_node, cons
                 }
             default:
                 break;
-            }
-    }
-
-    if (IsZeroNode((*old_node)->left_node)) {
-        switch ((*old_node)->value.operators) {
-            case OPERATOR_ADD:
-            case OPERATOR_SUB:
-                {
-                    Tree_node* right_child = (*old_node)->right_node;
-                    DifferentiatorNodeDtor(differentiator, (*old_node)->left_node);
-                    free((*old_node));
-                    (*old_node) = right_child;
-                    return;
-                }
-            case OPERATOR_POW:
-                {
-                    DifferentiatorNodeDtor(differentiator, (*old_node)->left_node);
-                    (*old_node) = NUMBER_NODE_CTOR(1.0);
-                    return;
-                }
-            default:
-                break;
-            }
-    }
-
-    if (IsZeroNode((*old_node)->right_node)) {
-        switch ((*old_node)->value.operators) {
-            case OPERATOR_ADD:
-            case OPERATOR_SUB:
-                {
-                    Tree_node* left_child = (*old_node)->left_node;
-                    DifferentiatorNodeDtor(differentiator, (*old_node)->right_node);
-                    free((*old_node));
-                    (*old_node) = left_child;
-                    return;
-                }
-            case OPERATOR_POW:
-                {
-                    DifferentiatorNodeDtor(differentiator, (*old_node)->right_node);
-                    free((*old_node));
-                    (*old_node) = NUMBER_NODE_CTOR(1.0);
-                    return;
-                }
-            default:
-                break;
-            }
+        }
     }
 }
 

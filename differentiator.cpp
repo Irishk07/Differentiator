@@ -264,6 +264,13 @@ Status_of_finding ItIsVariable(Differentiator* differentiator, char* buffer, typ
         (temp_buffer)++;
     }
 
+    for (size_t i = 0; i < differentiator->array_with_variables.size; ++i) {
+        if (strcmp(buffer, differentiator->array_with_variables.data[i]->name) == 0) {
+            value->index_variable = (int)i;
+            return FIND_YES;
+        }
+    }
+
     value->index_variable = (int)differentiator->array_with_variables.size;
     
     About_variable* about_variable = (About_variable*)calloc(1, sizeof(About_variable));
