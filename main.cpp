@@ -22,11 +22,7 @@ int main(int, char** argv) {
     // tree.root = GetComandir(&status, file);
     // ArrayPushtrees(&differentiator.array_with_trees, &tree);
 
-    UploadTree(&differentiator);
-
-    CalculateValueOfExample(&differentiator, PointerOnTree(&differentiator)->root);
-
-    Differentiation(&differentiator);
+    StartDifferntiator(&differentiator);
 
     DifferentiatorDtor(&differentiator);
 

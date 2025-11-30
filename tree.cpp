@@ -301,8 +301,18 @@ Tree_status CreateTexFileForDump(Differentiator* differentiator) {
     fprintf(tex_dump_file, "\\usepackage{bm}\n");
     fprintf(tex_dump_file, "\\usepackage{indentfirst}\n");
     fprintf(tex_dump_file, "\\linespread{1.3}\n");
-    fprintf(tex_dump_file, "\\parindent=1.5cm\n");
+    fprintf(tex_dump_file, "\\parindent=1.5cm\n \\usepackage{tocbibind}\n");
     fprintf(tex_dump_file, "\\begin{document}\n");
+
+    fprintf(tex_dump_file, "\\vspace*{3cm} \\begin{center}\n");
+    fprintf(tex_dump_file, "{\\Huge \\textbf{Муррифицирование}}\n\n");
+    fprintf(tex_dump_file, "\\end{center}\n");
+    fprintf(tex_dump_file, "\\begin{figure}[h]\n");
+    fprintf(tex_dump_file, "\\centering\n");
+    fprintf(tex_dump_file, "\\includegraphics[width=0.7\\textwidth]{cat.png}\n");
+    fprintf(tex_dump_file, "\\end{figure}\n\\newpage\n");
+
+    fprintf(tex_dump_file, "\\tableofcontents\n\\newpage\n");
     fprintf(tex_dump_file, "\\section*{Процесс Муррифицирования}\n");
     fprintf(tex_dump_file, "\\noindent \\textit{Исследование проведено при непосредственном участии кота Барсика} \\\\ \n"
                             "\\newline\n"

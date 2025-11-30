@@ -12,19 +12,39 @@
 #include "tree.h"
 
 
-Tree_status Differentiation(Differentiator* differentiator) {
+void StartDifferntiator(Differentiator* differentiator) {
     assert(differentiator);
+
+    CreateTexFileForDump(differentiator);
+
+    UploadTree(differentiator);
 
     color_printf(COLOR_PURPLE, " - By which variable do you want to differentiate?\n");
     char* variable = ReadAnswer();
 
-    int number = ReadNumberDifferentiation();
+    double value = ReadDoubleNumber("Enter value of variable");
+
+    Differentiation(differentiator, variable);
+
+    CalculateValueAllFunctions(differentiator, variable, value);
+
+    FormulaTaylora(differentiator, variable, value);
+
+    ClostTexFileForDump(differentiator);
+
+    free(variable);
+}
+
+
+Tree_status Differentiation(Differentiator* differentiator, char* variable) {
+    assert(differentiator);
+
+    int number = ReadIntNumber("Enter, please, number of differentiations");
     if (number == -1)
         return INPUT_ERROR;
 
-    CreateTexFileForDump(differentiator);
-
-    while (number-- > 0){
+    int cur_cnt = 0;
+    while (cur_cnt++ != number){
 
         Tree_node* old_tree_root = PointerOnTree(differentiator)->root;
 
@@ -35,7 +55,8 @@ Tree_status Differentiation(Differentiator* differentiator) {
         TREE_CHECK_AND_RETURN_ERRORS(ArrayPushtrees(&differentiator->array_with_trees, new_tree),   free(variable););
 
         fprintf(differentiator->dump_info.tex_dump_file, "\\begin{center}");
-        fprintf(differentiator->dump_info.tex_dump_file, "\\textbf{Промуррифицируем следующее выражение:}\\\\\n");
+        fprintf(differentiator->dump_info.tex_dump_file, "\\section*{Промуррифицируем следующее выражение %dй раз:}\n", cur_cnt);
+        fprintf(differentiator->dump_info.tex_dump_file, "\\addcontentsline{toc}{section}{Промуррифицируем следующее выражение %dй раз}\n", cur_cnt);
         fprintf(differentiator->dump_info.tex_dump_file, "\\begin{math}\n\\underline{");
         PrintExpressionToTex(differentiator, old_tree_root, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);
         fprintf(differentiator->dump_info.tex_dump_file, "}\\end{math}\n");
@@ -43,27 +64,24 @@ Tree_status Differentiation(Differentiator* differentiator) {
         
         fprintf(differentiator->dump_info.tex_dump_file, "\\begin{math}\n");
         new_tree->root = DifferentiationFunctions(differentiator, old_tree_root, variable);
-
         fprintf(differentiator->dump_info.tex_dump_file, "\\end{math}\n");
 
         TreeHTMLDump(differentiator, PointerOnTree(differentiator)->root, DUMP_INFO, NOT_ERROR_DUMP);
 
         fprintf(differentiator->dump_info.tex_dump_file, "\\begin{center}\n");
-        fprintf(differentiator->dump_info.tex_dump_file, "\\textbf{Результат муррифицирования:}\n\n");
+        fprintf(differentiator->dump_info.tex_dump_file, "\\subsection*{Результат %dго муррифицирования:}\n\n", cur_cnt);
+        fprintf(differentiator->dump_info.tex_dump_file, "\\addcontentsline{toc}{subsection}{Результат %dго муррифицирования}\n", cur_cnt);
         TreeTexDump(differentiator, old_tree_root, new_tree->root, variable);
         fprintf(differentiator->dump_info.tex_dump_file, "\\end{center}\n");
 
         OptimizationTree(differentiator, &new_tree->root, variable);
 
         fprintf(differentiator->dump_info.tex_dump_file, "\\begin{center}\n");
-        fprintf(differentiator->dump_info.tex_dump_file, "\\textbf{После оптимизациии:}\n\n");
+        fprintf(differentiator->dump_info.tex_dump_file, "\\subsection*{После оптимизациии:}\n\n");
+        fprintf(differentiator->dump_info.tex_dump_file, "\\addcontentsline{toc}{subsection}{После оптимизациии}\n");
         TreeTexDump(differentiator, old_tree_root, new_tree->root, variable);
         fprintf(differentiator->dump_info.tex_dump_file, "\\end{center}\n");
     }
-
-    ClostTexFileForDump(differentiator);
-
-    free(variable);
 
     return SUCCESS;
 }
@@ -183,12 +201,14 @@ Tree_node* DifferentiationFunctions(Differentiator* differentiator, Tree_node* t
         }
     }
 
-    TEX_CONNECTING_PHRASES;
-    fprintf(differentiator->dump_info.tex_dump_file, "\\frac{d}{d%s} ( ", variable);
-    PrintExpressionToTex(differentiator, tree_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);
-    fprintf(differentiator->dump_info.tex_dump_file, ") = ");
-    PrintExpressionToTex(differentiator, new_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);
-    fprintf(differentiator->dump_info.tex_dump_file, "\\\\\n");
+    if (tree_node->type == OPERATOR) {
+        TEX_CONNECTING_PHRASES;
+        fprintf(differentiator->dump_info.tex_dump_file, "\\frac{d}{d%s} ( ", variable);
+        PrintExpressionToTex(differentiator, tree_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);
+        fprintf(differentiator->dump_info.tex_dump_file, ") = ");
+        PrintExpressionToTex(differentiator, new_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);
+        fprintf(differentiator->dump_info.tex_dump_file, "\\\\\n");
+    }
 
     return new_node;
 }
@@ -249,12 +269,29 @@ Status_of_finding ContainsVariable(Differentiator* differentiator, Tree_node* tr
     return FIND_NO;
 }
 
-int ReadNumberDifferentiation() {
+double ReadDoubleNumber(const char* string) {
+    double number = -1;
+
+    int cnt_attempts = CNT_ATTEMPTS;
+    while (cnt_attempts-- > 0) {
+        color_printf(COLOR_PURPLE, " - %s\n", string);
+
+        if (scanf("%lg%*c", &number) != 1)
+            scanf("%*[^\n]%*c");
+
+        if (number >= 0)
+            return number;
+    }
+
+    return number;
+}
+
+int ReadIntNumber(const char* string) {
     int number = -1;
 
     int cnt_attempts = CNT_ATTEMPTS;
     while (cnt_attempts-- > 0) {
-        color_printf(COLOR_PURPLE, " - Enter, please, number of differention\n");
+        color_printf(COLOR_PURPLE, " - %s\n", string);
 
         if (scanf("%d%*c", &number) != 1)
             scanf("%*[^\n]%*c");
@@ -296,10 +333,13 @@ void OptimizationNode(Differentiator* differentiator, Tree_node** old_node, cons
         return;
     }
 
-    OptimizationOneNode(differentiator, tree, old_node);
+    OptimizationOneNode(differentiator, old_node);
 
     OptimizationZeroNode(differentiator, tree, old_node);
 }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-enum"
 
 void OptimizationZeroNode(Differentiator* differentiator, Tree* tree, Tree_node** old_node) {
     assert(differentiator);
@@ -351,7 +391,7 @@ void OptimizationZeroNode(Differentiator* differentiator, Tree* tree, Tree_node*
     }
 }
 
-void OptimizationOneNode(Differentiator* differentiator, Tree* tree, Tree_node** old_node) {
+void OptimizationOneNode(Differentiator* differentiator, Tree_node** old_node) {
     assert(differentiator);
     assert(old_node);
 
@@ -390,6 +430,8 @@ void OptimizationOneNode(Differentiator* differentiator, Tree* tree, Tree_node**
     }
 }
 
+#pragma GCC diagnostic pop
+
 bool IsConstantNode(Differentiator* differentiator, Tree_node* node, const char* variable) {
     if (node == NULL) return true;
     
@@ -403,7 +445,7 @@ bool IsConstantNode(Differentiator* differentiator, Tree_node* node, const char*
         case OPERATOR:
             return IsConstantNode(differentiator, node->left_node, variable) && 
                    IsConstantNode(differentiator, node->right_node, variable);
-            
+        case WRONG_TYPE:
         default:
             return false;
     }
@@ -421,4 +463,64 @@ bool IsOneNode(Tree_node* node) {
         return false;
 
     return (node->type == NUMBER && fabs(node->value.number - 1.0) < 1e-10);
+}
+
+void CalculateValueAllFunctions(Differentiator* differentiator, char* variable, double value) {
+    fprintf(differentiator->dump_info.tex_dump_file, "\\begin{center}");
+    fprintf(differentiator->dump_info.tex_dump_file, "\\section*{Посчитаем значение функции в миске:}\n");
+    fprintf(differentiator->dump_info.tex_dump_file, "\\addcontentsline{toc}{section}{Посчитаем значение функции в миске}\n");
+    fprintf(differentiator->dump_info.tex_dump_file, "\\end{center}");
+
+    for (size_t i = 0; i < differentiator->array_with_trees.size; ++i)
+        CalculateValueOfFunction(differentiator, differentiator->array_with_trees.data[i]->root, variable, value, i);
+}
+
+Tree_status CalculateValueOfFunction(Differentiator* differentiator, Tree_node* tree_node, char* variable, double value, size_t number) {
+    assert(differentiator);
+
+    TreeHTMLDump(differentiator, tree_node, DUMP_INFO, NOT_ERROR_DUMP);
+
+    fprintf(differentiator->dump_info.tex_dump_file, "\\begin{math}");
+    fprintf(differentiator->dump_info.tex_dump_file, "f(%s)^{(%zu)} = (", variable, number);
+    PrintExpressionToTex(differentiator, tree_node, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);
+    fprintf(differentiator->dump_info.tex_dump_file, ")(%s = %lg) = %lg\\\\\n", variable, value, Calculating(differentiator, tree_node));
+    fprintf(differentiator->dump_info.tex_dump_file, "\\end{math}");
+
+    return SUCCESS;
+}
+
+Tree_status FormulaTaylora(Differentiator* differentiator, char* variable, double value) {
+    assert(differentiator);
+
+    fprintf(differentiator->dump_info.tex_dump_file, "\\begin{center}");
+    fprintf(differentiator->dump_info.tex_dump_file, "\\section*{Разложим по формуле Тейлоррррррра:}\n");
+    fprintf(differentiator->dump_info.tex_dump_file, "\\addcontentsline{toc}{section}{Разложим по формуле Тейлоррррррра}\n");
+    fprintf(differentiator->dump_info.tex_dump_file, "\\end{center}");
+
+    fprintf(differentiator->dump_info.tex_dump_file, "\\begin{math}");
+    fprintf(differentiator->dump_info.tex_dump_file, "f(%s) = f(%s_0)", variable, variable);
+    for (size_t i = 1; i < differentiator->array_with_trees.size; ++i) {
+        fprintf(differentiator->dump_info.tex_dump_file, " + \\frac{f^{(%zu)}(%s_0)}{%zu!} \\cdot (%s - %s_0)^{%zu}", i, variable, i, variable, variable, i);
+    }
+
+    fprintf(differentiator->dump_info.tex_dump_file, "f(%s) = %lg", variable, Calculating(differentiator, differentiator->array_with_trees.data[0]->root));
+    for (size_t i = 1; i < differentiator->array_with_trees.size; ++i) {
+        fprintf(differentiator->dump_info.tex_dump_file, " + %lg \\cdot (%s - %lg)^{%zu}", Calculating(differentiator, differentiator->array_with_trees.data[i]->root) / Factorial(i),
+                                                                                           variable, value, i);
+    }
+    fprintf(differentiator->dump_info.tex_dump_file, "\\end{math}");
+
+    // for (size_t i = 0; i <= differentiator->array_with_trees.size; ++i) {
+    //     int cur_fact = Factorial(i + 1);
+
+    // }
+
+    return SUCCESS;
+}
+
+size_t Factorial(size_t n) {
+    if (n == 0 || n == 1) 
+        return 1;
+
+    return n * Factorial(n - 1);
 }
