@@ -60,6 +60,8 @@ double ValueOfTreeFromIndex(Differentiator* differentiator, size_t index);
 
 const char* IndetifySign(Tree_node* tree_node);
 
+void SkipSpaces(char** buffer);
+
 Tree_status TreeHTMLDump(Differentiator* differentiator, Tree_node* tree_node, int line, const char* file, Type_dump type_dump, Tree_status tree_status);
 
 Tree_status GenerateGraph(Differentiator* differentiator, Tree_node* tree_node);

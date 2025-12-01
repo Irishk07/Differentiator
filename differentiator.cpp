@@ -10,6 +10,7 @@
 #include "common.h"
 #include "colors.h"
 #include "debug.h"
+#include "read_expression.h"
 #include "onegin.h"
 #include "tree.h"
 
@@ -73,224 +74,16 @@ Tree_status ReadTree(Differentiator* differentiator, const char* file_with_tree)
 
     Tree_node* tree_root = PointerOnTreeRoot(differentiator);
 
-    TREE_CHECK_AND_RETURN_ERRORS(ReadNode(differentiator, &about_tree->tree->root, &differentiator->buffer_with_tree));
+    Tree_status status = SUCCESS;
+    about_tree->tree->root = GetComandir(differentiator, &status, &differentiator->buffer_with_tree);
+
+    // TREE_CHECK_AND_RETURN_ERRORS(ReadNode(differentiator, &about_tree->tree->root, &differentiator->buffer_with_tree));
 
     TREE_CHECK_AND_RETURN_ERRORS(TreeHTMLDump(differentiator, tree_root, DUMP_INFO, NOT_ERROR_DUMP));
 
     TREE_CHECK_AND_RETURN_ERRORS(TreeVerify(differentiator));
 
     return SUCCESS;
-}
-
-#define DUMP_CURRENT_SITUATION                                                                   \
-    TreeHTMLDump(differentiator, PointerOnTree(differentiator)->root, DUMP_INFO, NOT_ERROR_DUMP);\
-    dump_file = fopen(differentiator->dump_info.html_dump_filename, "a");                        \
-    if (dump_file == NULL)                                                                       \
-        TREE_CHECK_AND_RETURN_ERRORS(OPEN_ERROR);                                                \
-    fprintf(dump_file, "Current situation: \":%s\"\n", *current_pos);                            \
-    if (fclose(dump_file) == EOF)                                                                \
-        TREE_CHECK_AND_RETURN_ERRORS(CLOSE_ERROR,      perror("Error is: "));
-
-Tree_status ReadNode(Differentiator* differentiator, Tree_node** tree_node, char** current_pos) {    
-    assert(differentiator);
-    assert(tree_node);
-    assert(current_pos);
-    assert(*current_pos);
-
-    ON_DEBUG(FILE* dump_file = NULL);
-
-    SkipSpaces(current_pos);
-
-    if (*current_pos > differentiator->end_buffer)
-        TREE_CHECK_AND_RETURN_ERRORS(BUFFER_OVERFLOW);
-
-    if (**current_pos == '(') {
-        (*current_pos)++;
-        ON_DEBUG(DUMP_CURRENT_SITUATION);
-
-        if (strncmp(*current_pos, "nil", LEN_NIL) == 0) {
-            *current_pos += LEN_NIL;
-            *tree_node = NULL;
-        }
-
-        else {
-            int read_bytes = 0;
-            sscanf(*current_pos, "\"%*[^\"]\"%n", &read_bytes);
-            *(*current_pos + read_bytes - 1) = '\0'; // close_" -> '\0'
-
-            type_t value = {.number = 0};
-
-            Type_node type = FindOutType(differentiator, *current_pos + 1, &value); // +1 because skip open_"
-
-            *tree_node = NodeCtor(PointerOnTree(differentiator), type, value, NULL, NULL);
-            ON_DEBUG(DUMP_CURRENT_SITUATION);
-
-            *current_pos += read_bytes;
-            ON_DEBUG(DUMP_CURRENT_SITUATION);
-
-            TREE_CHECK_AND_RETURN_ERRORS(ReadNode(differentiator, &(*tree_node)->left_node, current_pos));
-
-            TREE_CHECK_AND_RETURN_ERRORS(ReadNode(differentiator, &(*tree_node)->right_node, current_pos));
-
-            (*current_pos)++; // ++ because skip ')'
-            ON_DEBUG(DUMP_CURRENT_SITUATION);
-
-            SkipSpaces(current_pos);
-        }
-    }
-
-    else if (strncmp(*current_pos, "nil", LEN_NIL) == 0) {
-        *current_pos += LEN_NIL;
-        ON_DEBUG(DUMP_CURRENT_SITUATION);
-
-        *tree_node = NULL;
-    }
-
-    else {
-        fprintf(stderr, "%s\n", *current_pos);
-        TREE_CHECK_AND_RETURN_ERRORS(SYNTAX_ERROR);
-    }
-
-    return SUCCESS;
-}
-
-#undef DUMP_CURRENT_SITUATION
-
-Type_node FindOutType(Differentiator* differentiator, char* buffer, type_t* value) {
-    assert(buffer);
-
-    if (ItIsOperator(buffer, value) == FIND_YES)
-        return OPERATOR;
-
-    if (ItIsNumber(buffer, value) == FIND_YES)
-        return NUMBER;
-
-    if (ItIsVariable(differentiator, buffer, value) == FIND_YES)
-        return VARIABLE;
-
-    return WRONG_TYPE;
-}
-
-Status_of_finding ItIsOperator(char* buffer, type_t* value) {
-    assert(buffer);
-
-    if (strcmp(buffer, "+") == 0)
-        value->operators = OPERATOR_ADD;
-
-    else if (strcmp(buffer, "-") == 0)
-        value->operators = OPERATOR_SUB;
-
-    else if (strcmp(buffer, "*") == 0)
-        value->operators = OPERATOR_MUL;
-
-    else if (strcmp(buffer, "/") == 0)
-        value->operators = OPERATOR_DIV;
-
-    else if (strcmp(buffer, "^") == 0)
-        value->operators = OPERATOR_POW;
-
-    else if (strcmp(buffer, "ln") == 0)
-        value->operators = OPERATOR_LN;
-
-    else if (strcmp(buffer, "log") == 0)
-        value->operators = OPERATOR_LOG;
-
-    else if (strcmp(buffer, "sin") == 0)
-        value->operators = OPERATOR_SIN;
-
-    else if (strcmp(buffer, "cos") == 0)
-        value->operators = OPERATOR_COS;
-
-    else if (strcmp(buffer, "tg") == 0)
-        value->operators = OPERATOR_TG;
-
-    else if (strcmp(buffer, "ctg") == 0)
-        value->operators = OPERATOR_CTG;
-
-    else if (strcmp(buffer, "arcsin") == 0)
-        value->operators = OPERATOR_ARCSIN;
-
-    else if (strcmp(buffer, "arccos") == 0)
-        value->operators = OPERATOR_ARCCOS;
-
-    else if (strcmp(buffer, "arctg") == 0)
-        value->operators = OPERATOR_ARCTG;
-    
-    else if (strcmp(buffer, "arcctg") == 0)
-        value->operators = OPERATOR_ARCCTG;
-
-    else if (strcmp(buffer, "sh") == 0)
-        value->operators = OPERATOR_SH;
-
-    else if (strcmp(buffer, "ch") == 0)
-        value->operators = OPERATOR_CH;
-
-    else if (strcmp(buffer, "th") == 0)
-        value->operators = OPERATOR_TH;
-
-    else if (strcmp(buffer, "cth") == 0)
-        value->operators = OPERATOR_CTH;
-
-    else
-        return FIND_NO;
-
-    return FIND_YES;
-}
-
-
-
-Status_of_finding ItIsNumber(char* buffer, type_t* value) {
-    assert(buffer);
-
-    char* endptr = NULL;
-    double result = strtod(buffer, &endptr);
-
-    if (endptr == buffer || *endptr != '\0')
-        return FIND_NO;
-
-    value->number = result;
-
-    return FIND_YES;
-}
-
-Status_of_finding ItIsVariable(Differentiator* differentiator, char* buffer, type_t* value) {
-    assert(buffer);
-
-    char* temp_buffer = buffer;
-    if (isdigit(*temp_buffer))
-        return FIND_NO;
-
-    while (*temp_buffer != '\0') {
-        if (!isalpha(*temp_buffer) && !isdigit(*temp_buffer))
-            return FIND_NO;
-
-        (temp_buffer)++;
-    }
-
-    for (size_t i = 0; i < differentiator->array_with_variables.size; ++i) {
-        if (strcmp(buffer, differentiator->array_with_variables.data[i]->name) == 0) {
-            value->index_variable = (int)i;
-            return FIND_YES;
-        }
-    }
-
-    value->index_variable = (int)differentiator->array_with_variables.size;
-    
-    About_variable* about_variable = (About_variable*)calloc(1, sizeof(About_variable));
-    *about_variable = {.name = strdup(buffer), .value = DEFAULT_VALUE};
-
-    if (ArrayPushvariables(&differentiator->array_with_variables, about_variable) != SUCCESS)
-        return FIND_NO;
-    
-    return FIND_YES;
-}
-
-void SkipSpaces(char** buffer) {
-    assert(buffer);
-    assert(*buffer);
-
-    while (isspace(**buffer) && (**buffer) != '\0')
-        (*buffer)++;
 }
 
 Tree_status CalculateValueOfExample(Differentiator* differentiator, Tree_node* tree_node) {

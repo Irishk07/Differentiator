@@ -277,6 +277,8 @@ Status_of_finding ContainsVariable(Differentiator* differentiator, Tree_node* tr
 }
 
 double ReadDoubleNumber(const char* string) {
+    assert(string);
+    
     double number = -1;
 
     int cnt_attempts = CNT_ATTEMPTS;
@@ -294,6 +296,8 @@ double ReadDoubleNumber(const char* string) {
 }
 
 int ReadIntNumber(const char* string) {
+    assert(string);
+
     int number = -1;
 
     int cnt_attempts = CNT_ATTEMPTS;
@@ -311,6 +315,9 @@ int ReadIntNumber(const char* string) {
 }
 
 void OptimizationTree(Differentiator* differentiator, Tree_node** old_node, const char* variable) {
+    assert(differentiator);
+    assert(variable);
+
     if (old_node == NULL) 
         return;
 
@@ -324,6 +331,10 @@ void OptimizationTree(Differentiator* differentiator, Tree_node** old_node, cons
 }
 
 void OptimizationNode(Differentiator* differentiator, Tree_node** old_node, const char* variable) {
+    assert(differentiator);
+    assert(old_node);
+    assert(variable);
+
     Tree* tree = PointerOnTree(differentiator);
 
     if (IsConstantNode(differentiator, *old_node, variable)) {
@@ -440,6 +451,9 @@ void OptimizationOneNode(Differentiator* differentiator, Tree_node** old_node) {
 #pragma GCC diagnostic pop
 
 bool IsConstantNode(Differentiator* differentiator, Tree_node* node, const char* variable) {
+    assert(differentiator);
+    assert(variable);
+
     if (node == NULL) return true;
     
     switch (node->type) {
@@ -473,6 +487,9 @@ bool IsOneNode(Tree_node* node) {
 }
 
 void CalculateValueAllFunctions(Differentiator* differentiator, char* variable, double value) {
+    assert(differentiator);
+    assert(variable);
+
     fprintf(differentiator->dump_info.tex_dump_file, "\\begin{center}\n");
     fprintf(differentiator->dump_info.tex_dump_file, "\\section*{Посчитаем значение функции в миске:}\n");
     fprintf(differentiator->dump_info.tex_dump_file, "\\addcontentsline{toc}{section}{Посчитаем значение функции в миске}\n");
@@ -583,6 +600,10 @@ Tree_status GNUPlot(Differentiator* differentiator) {
 }
 
 Tree_status CreateFileWithData(Differentiator* differentiator, Tree_node* tree_node, const char* data_file_name) {
+    assert(differentiator);
+    assert(tree_node);
+    assert(data_file_name);
+
     FILE* data_file = fopen(data_file_name, "w");
     if (data_file == NULL)
         TREE_CHECK_AND_RETURN_ERRORS(OPEN_ERROR);
@@ -606,6 +627,10 @@ Tree_status CreateFileWithData(Differentiator* differentiator, Tree_node* tree_n
 }
 
 Tree_status CreateGNUPlotFile(const char* GNUPlot_file, const char* data_file, const char* image) {
+    assert(GNUPlot_file);
+    assert(data_file);
+    assert(image);
+
     FILE* file = fopen(GNUPlot_file, "w");
 
     if (file == NULL)

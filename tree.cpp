@@ -173,6 +173,14 @@ const char* IndetifySign(Tree_node* tree_node) {
     return NULL;
 }
 
+void SkipSpaces(char** buffer) {
+    assert(buffer);
+    assert(*buffer);
+
+    while (isspace(**buffer) && (**buffer) != '\0')
+        (*buffer)++;
+}
+
 
 Tree_status TreeHTMLDump(Differentiator* differentiator, Tree_node* tree_node, int line, const char* file, Type_dump type_dump, Tree_status tree_status) {
     assert(differentiator);

@@ -15,6 +15,7 @@
 
 
 const int CNT_ATTEMPTS  = 5;
+const int DEFAULT_VALUE = 666;
 
 
 enum Type_node {
@@ -46,6 +47,27 @@ enum Type_operators {
     OPERATOR_CTH    = 18, 
     WRONG_OPERATOR
 };
+
+struct About_function {
+    const char* name;
+    Type_operators type;
+};
+
+About_function const about_functions[] = {{.name = "ln", .type = OPERATOR_LN}, 
+                                          {.name = "log", .type = OPERATOR_LOG},
+                                          {.name = "sin", .type = OPERATOR_SIN},
+                                          {.name = "cos", .type = OPERATOR_COS},
+                                          {.name = "tg", .type = OPERATOR_TG},
+                                          {.name = "ctg", .type = OPERATOR_CTG},
+                                          {.name = "arcsin", .type = OPERATOR_ARCSIN},
+                                          {.name = "arccos", .type = OPERATOR_ARCCOS},
+                                          {.name = "arctg", .type = OPERATOR_ARCTG},
+                                          {.name = "arcctg", .type = OPERATOR_ARCCTG},
+                                          {.name = "sh", .type = OPERATOR_SH},
+                                          {.name = "ch", .type = OPERATOR_CH},
+                                          {.name = "th", .type = OPERATOR_TH},
+                                          {.name = "cth", .type = OPERATOR_CTH}};
+
 
 union type_t {
     double number;
