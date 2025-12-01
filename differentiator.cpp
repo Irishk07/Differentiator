@@ -67,12 +67,15 @@ Tree_status ReadTree(Differentiator* differentiator, const char* file_with_tree)
     differentiator->begin_buffer = differentiator->buffer_with_tree;
     differentiator->end_buffer   = differentiator->begin_buffer + differentiator->size_buffer;
 
-    Tree* tree = (Tree*)calloc(1, sizeof(Tree));
-    ArrayPushtrees(&differentiator->array_with_trees, tree);
+    About_tree* about_tree = (About_tree*)calloc(1, sizeof(About_tree));
+    about_tree->tree = (Tree*)calloc(1, sizeof(Tree));
+    ArrayPushtrees(&differentiator->array_with_trees, about_tree);
 
-    TREE_CHECK_AND_RETURN_ERRORS(ReadNode(differentiator, &tree->root, &differentiator->buffer_with_tree));
+    Tree_node* tree_root = PointerOnTreeRoot(differentiator);
 
-    TREE_CHECK_AND_RETURN_ERRORS(TreeHTMLDump(differentiator, tree->root, DUMP_INFO, NOT_ERROR_DUMP));
+    TREE_CHECK_AND_RETURN_ERRORS(ReadNode(differentiator, &about_tree->tree->root, &differentiator->buffer_with_tree));
+
+    TREE_CHECK_AND_RETURN_ERRORS(TreeHTMLDump(differentiator, tree_root, DUMP_INFO, NOT_ERROR_DUMP));
 
     TREE_CHECK_AND_RETURN_ERRORS(TreeVerify(differentiator));
 
@@ -469,7 +472,7 @@ Tree_status DifferentiatorDtor(Differentiator* differentiator) {
     free(differentiator->begin_buffer);
     
     for (size_t i = 0; i < differentiator->array_with_trees.size; ++i) {
-        DifferentiatorNodeDtor(differentiator, (differentiator->array_with_trees.data[i])->root);
+        DifferentiatorNodeDtor(differentiator, PointerOnTreeRootFromIndex(differentiator, i));
     }
     ArrayDtorTrees(&differentiator->array_with_trees);
     free(differentiator->array_with_trees.data);

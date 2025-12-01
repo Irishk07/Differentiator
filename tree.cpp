@@ -109,7 +109,31 @@ char* NameOfVariable(Differentiator* differentiator, Tree_node* tree_node) {
 Tree* PointerOnTree(Differentiator* differentiator) {
     assert(differentiator);
 
-    return differentiator->array_with_trees.data[differentiator->array_with_trees.size - 1];
+    return differentiator->array_with_trees.data[differentiator->array_with_trees.size - 1]->tree;
+}
+
+Tree_node* PointerOnTreeRoot(Differentiator* differentiator) {
+    assert(differentiator);
+
+    return differentiator->array_with_trees.data[differentiator->array_with_trees.size - 1]->tree->root;
+}
+
+Tree_node* PointerOnTreeRootFromIndex(Differentiator* differentiator, size_t index) {
+    assert(differentiator);
+
+    return differentiator->array_with_trees.data[index]->tree->root;
+}
+
+double ValueOfTree(Differentiator* differentiator) {
+    assert(differentiator);
+
+    return differentiator->array_with_trees.data[differentiator->array_with_trees.size - 1]->value;
+}
+
+double ValueOfTreeFromIndex(Differentiator* differentiator, size_t index) {
+    assert(differentiator);
+
+    return differentiator->array_with_trees.data[index]->value;
 }
 
 const char* IndetifySign(Tree_node* tree_node) {
@@ -194,7 +218,7 @@ Tree_status TreeHTMLDump(Differentiator* differentiator, Tree_node* tree_node, i
         TREE_CHECK_AND_RETURN_ERRORS(EXECUTION_FAILED,      fprintf(html_dump_file, "Error with create image:(\n"));
 
     fprintf(html_dump_file, "\n");
-    fprintf(html_dump_file, "<img src = %s/images/image%d.png width = 700px>", differentiator->dump_info.directory, differentiator->dump_info.num_html_dump);
+    fprintf(html_dump_file, "<img src = %s/images/image%d.png width = 1000px>", differentiator->dump_info.directory, differentiator->dump_info.num_html_dump);
 
     fprintf(html_dump_file, "\n\n");
 
@@ -305,15 +329,17 @@ Tree_status CreateTexFileForDump(Differentiator* differentiator) {
     fprintf(tex_dump_file, "\\begin{document}\n");
 
     fprintf(tex_dump_file, "\\vspace*{3cm} \\begin{center}\n");
-    fprintf(tex_dump_file, "{\\Huge \\textbf{Муррифицирование}}\n\n");
+    fprintf(tex_dump_file, "\\section*{\\Huge \\textbf{Муррифицирование}}\n\n");
     fprintf(tex_dump_file, "\\end{center}\n");
     fprintf(tex_dump_file, "\\begin{figure}[h]\n");
     fprintf(tex_dump_file, "\\centering\n");
     fprintf(tex_dump_file, "\\includegraphics[width=0.7\\textwidth]{cat.png}\n");
     fprintf(tex_dump_file, "\\end{figure}\n\\newpage\n");
 
+    fprintf(tex_dump_file, "\\renewcommand{\\contentsname}{Меню Барсика}\n");
     fprintf(tex_dump_file, "\\tableofcontents\n\\newpage\n");
     fprintf(tex_dump_file, "\\section*{Процесс Муррифицирования}\n");
+    fprintf(tex_dump_file, "\\addcontentsline{toc}{section}{Процесс Муррифицирования}\n");
     fprintf(tex_dump_file, "\\noindent \\textit{Исследование проведено при непосредственном участии кота Барсика} \\\\ \n"
                             "\\newline\n"
                             "Дорогие читатели! Перед вами фундаментальный труд, раскрывающий глубинные связи"
@@ -328,6 +354,7 @@ Tree_status CreateTexFileForDump(Differentiator* differentiator) {
                             "\\end{itemize} \n"
                             "Приступаем к вычислениям, и да поможет нам великий кот Ньютон! \\\\ \n"
                             "\\newline\n");
+    fprintf(tex_dump_file, "\\newpage\n");
 
     differentiator->dump_info.tex_dump_file = tex_dump_file;
 

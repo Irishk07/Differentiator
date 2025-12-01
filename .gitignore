@@ -4,3 +4,5 @@ dump/
 dump*
 tree_prog
 *.txt
+*.png
+GNUPlot/

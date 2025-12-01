@@ -111,7 +111,12 @@ struct Tree {
     size_t size;
 };
 
-typedef Tree* trees_type_t;
+struct About_tree {
+    Tree* tree;
+    double value;
+};
+
+typedef About_tree* trees_type_t;
 
 struct About_variable {
     char* name;

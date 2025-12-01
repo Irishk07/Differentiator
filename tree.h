@@ -19,7 +19,7 @@
 #define NOT_ERROR_DUMP USUAL_DUMP, SUCCESS
 
 
-const int MAX_LEN_NAME = 100;
+const int MAX_LEN_NAME = 256;
 const int LEN_NIL      = 3;
 
 
@@ -49,6 +49,14 @@ char* NameOfVariable(Differentiator* differentiator, Tree_node* tree_node);
 size_t IndexOfVariable(Tree_node* tree_node);
 
 Tree* PointerOnTree(Differentiator* differentiator);
+
+Tree_node* PointerOnTreeRoot(Differentiator* differentiator);
+
+Tree_node* PointerOnTreeRootFromIndex(Differentiator* differentiator, size_t index);
+
+double ValueOfTree(Differentiator* differentiator);
+
+double ValueOfTreeFromIndex(Differentiator* differentiator, size_t index);
 
 const char* IndetifySign(Tree_node* tree_node);
 

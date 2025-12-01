@@ -36,11 +36,17 @@ bool IsOneNode(Tree_node* node);
 
 void CalculateValueAllFunctions(Differentiator* differentiator, char* variable, double value);
 
-Tree_status CalculateValueOfFunction(Differentiator* differentiator, Tree_node* tree_node, char* variable, double value, size_t number);
+double CalculateValueOfFunction(Differentiator* differentiator, Tree_node* tree_node, char* variable, double value, size_t number);
 
 Tree_status FormulaTaylora(Differentiator* differentiator, char* variable, double value);
 
 size_t Factorial(size_t n);
+
+Tree_status GNUPlot(Differentiator* differentiator);
+
+Tree_status CreateFileWithData(Differentiator* differentiator, Tree_node* tree_node, const char* data_file_name);
+
+Tree_status CreateGNUPlotFile(const char* GNUPlot_file, const char* data_file, const char* image);
 
 
 #endif // DIFFRENTIATION_FUNCTIONS_H_
