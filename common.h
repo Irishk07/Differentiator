@@ -44,7 +44,7 @@ enum Type_operators {
     OPERATOR_SH     = 15,  
     OPERATOR_CH     = 16,  
     OPERATOR_TH     = 17,  
-    OPERATOR_CTH    = 18, 
+    OPERATOR_CTH    = 18,
     WRONG_OPERATOR
 };
 
@@ -146,6 +146,12 @@ struct About_variable {
 };
 
 typedef About_variable* variables_type_t;
+
+struct About_array {
+    char* data;
+    size_t size;
+    size_t capacity;
+};
 
 struct Array_with_variables {
     variables_type_t* data = NULL;

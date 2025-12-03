@@ -20,7 +20,7 @@
 
 
 const int MAX_LEN_NAME = 256;
-const int LEN_NIL      = 3;
+const int LEN_NIL      = sizeof("nil") - 1;
 
 
 enum Type_dump {
@@ -49,6 +49,8 @@ char* NameOfVariable(Differentiator* differentiator, Tree_node* tree_node);
 size_t IndexOfVariable(Tree_node* tree_node);
 
 Tree* PointerOnTree(Differentiator* differentiator);
+
+Tree* PointerOnTreeFromIndex(Differentiator* differentiator, size_t index);
 
 Tree_node* PointerOnTreeRoot(Differentiator* differentiator);
 

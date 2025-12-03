@@ -112,6 +112,12 @@ Tree* PointerOnTree(Differentiator* differentiator) {
     return differentiator->array_with_trees.data[differentiator->array_with_trees.size - 1]->tree;
 }
 
+Tree* PointerOnTreeFromIndex(Differentiator* differentiator, size_t index) {
+    assert(differentiator);
+
+    return differentiator->array_with_trees.data[index]->tree;
+}
+
 Tree_node* PointerOnTreeRoot(Differentiator* differentiator) {
     assert(differentiator);
 
@@ -301,6 +307,7 @@ void PrintNodeToDot(Differentiator* differentiator, FILE *file, Tree_node* tree_
 void PrintErrors(int error, FILE* stream) {
     assert(stream);
 
+    // TODO switch
     if (error == SUCCESS                  ) fprintf(stream, "ALL_RIGHT\n");
     if (error == NULL_POINTER_ON_TREE     ) fprintf(stream, "Null pointer on tree\n");
     if (error == NULL_POINTER_ON_NODE     ) fprintf(stream, "Null pointer on node\n");
@@ -331,6 +338,7 @@ Tree_status CreateTexFileForDump(Differentiator* differentiator) {
     fprintf(tex_dump_file, "\\usepackage{geometry}\n");
     fprintf(tex_dump_file, "\\geometry{left=2.5cm, right=2.5cm, top=2cm, bottom=2cm}\n");
     fprintf(tex_dump_file, "\\usepackage{bm}\n");
+    fprintf(tex_dump_file, "\\usepackage{xcolor}\n");
     fprintf(tex_dump_file, "\\usepackage{indentfirst}\n");
     fprintf(tex_dump_file, "\\linespread{1.3}\n");
     fprintf(tex_dump_file, "\\parindent=1.5cm\n \\usepackage{tocbibind}\n");

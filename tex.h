@@ -5,7 +5,7 @@
 const char* const CONNECTING_PHRASES[] = {
                                 "Этот дифференциал такой же упругий, как усы кота при виде сметаны",
                                 "Как говорил кот Шрёдингер: производная одновременно и существует, и не существует",
-                                "Интеграл пока написал без пределов, но этот беспредел мы скоро устраним, как кот устраняет мышей",
+                                "Интеграл пока написан без пределов, но этот беспредел мы скоро устраним, как кот устраняет мышей",
                                 "Данная производная имеет такую же степень свободы, как кот на столе в три часа ночи",
                                 "Ноль всегда сходится к нулю. Это очень глубокая мысль, достойная кота, созерцающего птиц за окном",
                                 "Производная от рыбки равна котлетке - это знает каждый усатый аналитик",
@@ -14,17 +14,18 @@ const char* const CONNECTING_PHRASES[] = {
                                 "Данный предел стремится к банке с кормом - это аксиома кошачьей математики",
                                 "Производная кошачьего терпения при приближении времени кормёжки стремительно растёт",
                                 "Этот дифференциал разбежался, как кот от купания",
-                                "Вот у нас асимптота выходит из преисподней и идёт дальше в рай, прямо как кот, укравший сосиску",
+                                "Асимптота выходит из преисподней и идёт дальше в рай, прямо как кот, укравший сосиску",
                                 "Расмотрим все 128 подмножеств нашего множество, включая пустое, как миска кота утром",
                                 "Этот интеграл такой же бесконечный, как кошачья наглость",
                                 "По 3 теореме Вейрштрасса: любой непрерывный кот на отрезке равномерно мурчит",
                                 "Гомотопические группы данного выражения изоморфны группе мурчания",
                                 "Этот дифференциал инвариантен относительно преобразований кошачьей системы координат",
                                 "Квадрат - это не треугольник на стероидах, это отдельная фигура, как и кот в коробке",
-                                "Формулу разности кубов я не помню, потому что в 7 классе болел, а кот на моих конспектах спал",
+                                "Формулу разности кубов я не помню, потому что в 7 классе болел, а на моих конспектах спал кот",
                                 "Это выражение такое же простое, как кот, но только на первый взгляд",
-                                "иуцарифдаьщфяащигшдяыпро... Данная производная очевидна, как то, что кот снова спит на клавиатуре"
+                                "иуцарифдаьщфяащигшдяыпро... Данная производная очевидна, как и то, что кот снова спит на клавиатуре"
                                 };
+
 const size_t CNT_OF_PHRASES = sizeof(CONNECTING_PHRASES) / sizeof(CONNECTING_PHRASES[0]);
 
 #ifdef OPERATORS_TO_TEX
@@ -71,49 +72,43 @@ const size_t CNT_OF_PHRASES = sizeof(CONNECTING_PHRASES) / sizeof(CONNECTING_PHR
 
 #define PRINT_LN_OPERATOR_TO_TEX                                                                            \
 {                                                                                                           \
-    fprintf(tex_dump_file, "\\ln(");                                                                        \
+    fprintf(tex_dump_file, "\\ln");                                                                        \
     PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
-    fprintf(tex_dump_file, ")");                                                                            \
     break;                                                                                                  \
 }    
 
 #define PRINTF_LOG_OPERATOR_TO_TEX                                                                          \
 {                                                                                                           \
-    fprintf(tex_dump_file, "\\log(");                                                                       \
+    fprintf(tex_dump_file, "\\log");                                                                       \
     PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
-    fprintf(tex_dump_file, ")");                                                                            \
     break;                                                                                                  \
 }
 
 #define PRINTF_SIN_OPERATOR_TO_TEX                                                                          \
 {                                                                                                           \
-    fprintf(tex_dump_file, "\\sin(");                                                                       \
+    fprintf(tex_dump_file, "\\sin");                                                                       \
     PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
-    fprintf(tex_dump_file, ")");                                                                            \
     break;                                                                                                  \
 }                                                                                                           \
 
 #define PRINTF_COS_OPERATOR_TO_TEX                                                                          \
 {                                                                                                           \
-    fprintf(tex_dump_file, "\\cos(");                                                                       \
+    fprintf(tex_dump_file, "\\cos");                                                                       \
     PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
-    fprintf(tex_dump_file, ")");                                                                            \
     break;                                                                                                  \
 }
 
 #define PRINTF_TG_OPERATOR_TO_TEX                                                                           \
 {                                                                                                           \
-    fprintf(tex_dump_file, "\\tan(");                                                                       \
+    fprintf(tex_dump_file, "\\tan");                                                                       \
     PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
-    fprintf(tex_dump_file, ")");                                                                            \
     break;                                                                                                  \
 }
 
 #define PRINTF_CTG_OPERATOR_TO_TEX                                                                          \
 {                                                                                                           \
-    fprintf(tex_dump_file, "\\cot(");                                                                       \
+    fprintf(tex_dump_file, "\\cot");                                                                       \
     PrintExpressionToTex(differentiator, tree_node->left_node, tex_dump_file, current_prioritet, depth + 1);\
-    fprintf(tex_dump_file, ")");                                                                            \
     break;                                                                                                  \
 }
 

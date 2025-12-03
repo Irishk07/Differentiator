@@ -11,6 +11,12 @@
 const size_t DEFAULT_START_CAPACITY = 32; // it must be > 0
 const int REALLOC_COEFF = 2;
 
+// Tree_status ArrayCtor(About_array* array, size_t sizeof_elements, size_t start_capacity);
+
+// Tree_status ArrayResize(About_array* array, size_t sizeof_elements, size_t old_capacity);
+
+// Tree_status ArrayPush(About_array* array, size_t sizeof_elements, char* new_element);
+
 
 Tree_status ArrayCtortrees(Array_with_trees* array_with_trees, size_t start_capacity);
 

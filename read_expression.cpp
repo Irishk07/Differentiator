@@ -11,13 +11,15 @@
 
 // G ::= E'$'
 // E ::= T{[+ -]T}*
-// T ::= P{[* /]P}*
+// T ::= POW{[* /]POW}*
+// POW ::= P{[^]P}*
 // P ::= '('E')' | N | V | F
 // N ::= [0-9]+
 // V ::= [a-z _][a-z 0-9 _]*
 // F ::= [ln, sin, cos, tg, ctg, arcsin, arccos, arctg, arcctg, sh, ch, th, cth]'('E')'
 
 Tree_node* GetComandir(Differentiator* differentiator, Tree_status* status, char** str) {
+    assert(differentiator);
     assert(status);
     assert(str);
 
@@ -33,9 +35,9 @@ Tree_node* GetComandir(Differentiator* differentiator, Tree_status* status, char
 }
 
 Tree_node* GetExpression(Differentiator* differentiator, char** str, Tree_status* status) {
-    assert(str);
-    assert(*str);
+    assert(differentiator);
     assert(status);
+    assert(str);
 
     Tree_node* new_node = GetTerm(differentiator, str, status);
 
@@ -58,17 +60,18 @@ Tree_node* GetExpression(Differentiator* differentiator, char** str, Tree_status
 }
 
 Tree_node* GetTerm(Differentiator* differentiator, char** str, Tree_status* status) {
+    assert(differentiator);
+    assert(status);
     assert(str);
-    assert(*str);
 
-    Tree_node* new_node = GetPrimaryExpression(differentiator, str, status);
+    Tree_node* new_node = GetPow(differentiator, str, status);
 
     SkipSpaces(str);
     while (**str == '*' || **str == '/') {
         int cur_operator = (**str);
         (*str)++;
 
-        Tree_node* new_node_2 = GetPrimaryExpression(differentiator, str, status);
+        Tree_node* new_node_2 = GetPow(differentiator, str, status);
         if (cur_operator == '*')
             new_node = NodeCtor(PointerOnTree(differentiator), OPERATOR, (type_t){.operators = OPERATOR_MUL}, new_node, new_node_2);
         else 
@@ -80,9 +83,30 @@ Tree_node* GetTerm(Differentiator* differentiator, char** str, Tree_status* stat
     return new_node;
 }
 
-Tree_node* GetPrimaryExpression(Differentiator* differentiator, char** str, Tree_status* status) {
+Tree_node* GetPow(Differentiator* differentiator, char** str, Tree_status* status) {
+    assert(differentiator);
+    assert(status);
     assert(str);
-    assert(*str);
+
+    Tree_node* new_node = GetPrimaryExpression(differentiator, str, status);
+
+    SkipSpaces(str);
+    while (**str == '^') {
+        (*str)++;
+
+        Tree_node* new_node_2 = GetPrimaryExpression(differentiator, str, status);
+        new_node = NodeCtor(PointerOnTree(differentiator), OPERATOR, (type_t){.operators = OPERATOR_POW}, new_node, new_node_2);
+        
+        SkipSpaces(str);
+    }
+
+    return new_node;
+}
+
+Tree_node* GetPrimaryExpression(Differentiator* differentiator, char** str, Tree_status* status) {
+    assert(differentiator);
+    assert(status);
+    assert(str);
     
     Tree_node* tree_node = NULL;
 
@@ -97,7 +121,6 @@ Tree_node* GetPrimaryExpression(Differentiator* differentiator, char** str, Tree
 
         (*str)++;
     }
-
     else {
         tree_node = GetNumber(differentiator, str, status);
         if (tree_node != NULL)
@@ -116,8 +139,9 @@ Tree_node* GetPrimaryExpression(Differentiator* differentiator, char** str, Tree
 }
 
 Tree_node* GetNumber(Differentiator* differentiator, char** str, Tree_status* status) {
+    assert(differentiator);
+    assert(status);
     assert(str);
-    assert(*str);
 
     char* old_str = *str;
     double val = 0;
@@ -134,16 +158,16 @@ Tree_node* GetNumber(Differentiator* differentiator, char** str, Tree_status* st
 
     if (old_str == *str)
         *status = NOT_NUMBER;
-
     else 
         tree_node = NodeCtor(PointerOnTree(differentiator), NUMBER, (type_t){.number = val}, NULL, NULL);
 
     return tree_node;
 }
 
-Tree_node* GetVariable(Differentiator* differentiator, char** str, Tree_status*) {
+Tree_node* GetVariable(Differentiator* differentiator, char** str, Tree_status* status) {
+    assert(differentiator);
+    assert(status);
     assert(str);
-    assert(*str);
 
     char* first_symbol = *str;
 
@@ -179,7 +203,7 @@ Tree_node* GetVariable(Differentiator* differentiator, char** str, Tree_status*)
 
         ArrayPushvariables(&differentiator->array_with_variables, about_variable);
 
-        return NodeCtor(PointerOnTree(differentiator), VARIABLE, (type_t){.index_variable = (int)(differentiator->array_with_variables.size - 1)}, NULL, NULL);
+        return NodeCtor(PointerOnTree(differentiator), VARIABLE, (type_t){.index_variable = (int)(differentiator->array_with_variables.size) - 1}, NULL, NULL);
     }
 
     return tree_node;
@@ -187,6 +211,7 @@ Tree_node* GetVariable(Differentiator* differentiator, char** str, Tree_status*)
 
 Tree_node* GetFunction(Differentiator* differentiator, char** str, Tree_status* status) {
     assert(differentiator);
+    assert(status);
     assert(str);
 
     for (size_t i = 0; i < sizeof(about_functions) / sizeof(about_functions[0]); ++i) {

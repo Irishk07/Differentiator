@@ -1,11 +1,49 @@
 #include <assert.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "array.h"
 
 #include "common.h"
 #include "string_functions.h"
 
+
+// Tree_status ArrayCtor(About_array* array, size_t sizeof_elements, size_t start_capacity) {
+//     array->capacity = start_capacity;
+//     array->size     = 0;
+
+//     array->data = (char*)calloc(array->capacity, sizeof_elements);
+
+//     if (array->data == NULL)
+//         TREE_CHECK_AND_RETURN_ERRORS(MEMORY_ERROR);
+
+//     return SUCCESS;
+// }
+
+// Tree_status ArrayResize(About_array* array, size_t sizeof_elements, size_t old_capacity) {
+//     char* temp_data = (char*)my_recalloc(array->data, array->capacity * sizeof_elements, old_capacity * sizeof_elements);
+
+//     if (temp_data == NULL)
+//         TREE_CHECK_AND_RETURN_ERRORS(MEMORY_ERROR);
+
+//     array->data = temp_data;
+
+//     return SUCCESS;
+// }
+
+// Tree_status ArrayPush(About_array* array, size_t sizeof_elements, char* new_element) {
+//     if (array->size >= array->capacity) {
+//         size_t old_capacity = array->capacity;
+//         array->capacity *= REALLOC_COEFF;
+
+//         TREE_CHECK_AND_RETURN_ERRORS(ArrayResize(array, sizeof_elements, old_capacity));
+//     }
+
+//     memcpy(array->data + array->size * sizeof_elements, new_element, sizeof(new_element) * sizeof_elements);
+//     array->data++;
+
+//     return SUCCESS;
+// }
 
 #define ARRAY_CTOR(name)                                                                                            \
                                                                                                                     \

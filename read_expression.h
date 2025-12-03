@@ -10,6 +10,8 @@ Tree_node* GetExpression(Differentiator* differentiator, char** str, Tree_status
 
 Tree_node* GetTerm(Differentiator* differentiator, char** str, Tree_status* status);
 
+Tree_node* GetPow(Differentiator* differentiator, char** str, Tree_status* status);
+
 Tree_node* GetPrimaryExpression(Differentiator* differentiator, char** str, Tree_status* status);
 
 Tree_node* GetNumber(Differentiator* differentiator, char** str, Tree_status* status);
@@ -17,9 +19,6 @@ Tree_node* GetNumber(Differentiator* differentiator, char** str, Tree_status* st
 Tree_node* GetVariable(Differentiator* differentiator, char** str, Tree_status* status);
 
 Tree_node* GetFunction(Differentiator* differentiator, char** str, Tree_status* status);
-
-Tree_node* SpuskNodeCtor(Type_node type, type_t value,
-                    Tree_node* left_node, Tree_node* right_node);
 
 
 #endif // READ_EXPRESSION_H_
