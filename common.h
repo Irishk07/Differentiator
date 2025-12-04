@@ -173,6 +173,14 @@ struct Differentiator {
     Array_with_variables array_with_variables;
     Array_with_trees array_with_trees;
     Dump_information dump_info;
+    const char* file_with_function;
+};
+
+struct Intervals {
+    double x_start;
+    double x_end;
+    double y_start;
+    double y_end;
 };
 
 

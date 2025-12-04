@@ -19,16 +19,27 @@ void StartDifferntiator(Differentiator* differentiator) {
 
     UploadTree(differentiator);
 
-    color_printf(COLOR_PURPLE, " - By which variable do you want to differentiate?\n");
-    char* variable = ReadAnswer();;
+    differentiator->buffer_with_tree++;
 
-    double value = ReadDoubleNumber("Enter value of variable");
-    for (size_t i = 0; i < differentiator->array_with_variables.size; ++i) {
-        if (strcmp(variable, differentiator->array_with_variables.data[i]->name) == 0)
-            differentiator->array_with_variables.data[i]->value = value;
-    }
+    // color_printf(COLOR_PURPLE, " - By which variable do you want to differentiate?\n");
+    // char* variable = ReadAnswer();
 
-    Differentiation(differentiator, variable);
+    // double value = ReadDoubleNumber("Enter value of variable");
+    // for (size_t i = 0; i < differentiator->array_with_variables.size; ++i) {
+    //     if (strcmp(variable, differentiator->array_with_variables.data[i]->name) == 0)
+    //         differentiator->array_with_variables.data[i]->value = value;
+    // }
+
+    char variable[MAX_LEN_NAME] = {};
+    double value = 1;
+    int number = 0;
+    int read_bytes = 0;
+
+    sscanf(differentiator->buffer_with_tree, "%c, %lg, %d%n", variable, &value, &number, &read_bytes);
+    differentiator->array_with_variables.data[0]->value = value;
+    differentiator->buffer_with_tree += read_bytes;
+
+    Differentiation(differentiator, variable, number);
 
     CalculateValueAllFunctions(differentiator, variable, value);
 
@@ -37,16 +48,13 @@ void StartDifferntiator(Differentiator* differentiator) {
     GNUPlot(differentiator);
 
     ClostTexFileForDump(differentiator);
-
-    free(variable);
 }
 
 
-Tree_status Differentiation(Differentiator* differentiator, char* variable) {
+Tree_status Differentiation(Differentiator* differentiator, char* variable, int number) {
     assert(differentiator);
     assert(variable);
 
-    int number = ReadIntNumber("Enter, please, number of differentiations");
     if (number == -1)
         return INPUT_ERROR;
 
@@ -74,8 +82,6 @@ Tree_status Differentiation(Differentiator* differentiator, char* variable) {
         about_new_tree->tree->root = DifferentiationFunctions(differentiator, old_tree_root, variable);
         fprintf(differentiator->dump_info.tex_dump_file, "\\end{math}\n");
 
-        TreeHTMLDump(differentiator, PointerOnTreeRoot(differentiator), DUMP_INFO, NOT_ERROR_DUMP);
-
         fprintf(differentiator->dump_info.tex_dump_file, "\\begin{center}\n");
         fprintf(differentiator->dump_info.tex_dump_file, "\\subsection*{Результат %dго муррифицирования:}\n\n", cur_cnt);
         fprintf(differentiator->dump_info.tex_dump_file, "\\addcontentsline{toc}{subsection}{Результат %dго муррифицирования}\n", cur_cnt);
@@ -89,6 +95,8 @@ Tree_status Differentiation(Differentiator* differentiator, char* variable) {
         fprintf(differentiator->dump_info.tex_dump_file, "\\addcontentsline{toc}{subsection}{После оптимизациии}\n");
         TreeTexDump(differentiator, old_tree_root, PointerOnTreeRoot(differentiator), variable);
         fprintf(differentiator->dump_info.tex_dump_file, "\\end{center}\n");
+
+        fprintf(stderr, "done\n");
     }
 
     return SUCCESS;
@@ -139,20 +147,11 @@ Tree_node* DifferentiationFunctions(Differentiator* differentiator, Tree_node* t
     if (tree_node->type == VARIABLE) {
         int result_compare = strcmp(NameOfVariable(differentiator, tree_node), variable);
 
-        if (result_compare != 0) {
-            TEX_CONST;
-            new_node = NodeCtor(tree, NUMBER, (type_t){.number = 0}, tree_node->left_node, tree_node->right_node);
-        }
-        else {
-            TEX_VARIABLE;
-            new_node = NodeCtor(tree, NUMBER, (type_t){.number = 1}, tree_node->left_node, tree_node->right_node);
-        }
+        if (result_compare != 0) { TEX_CONST;    new_node = NUMBER_NODE_CTOR(0); }
+        else                     { TEX_VARIABLE; new_node = NUMBER_NODE_CTOR(1); }
     }        
 
-    if (tree_node->type == NUMBER) {
-        TEX_CONST;
-        new_node = NodeCtor(tree, NUMBER, (type_t){.number = 0}, tree_node->left_node, tree_node->right_node);
-    }
+    if (tree_node->type == NUMBER) { TEX_CONST; new_node = NUMBER_NODE_CTOR(0); }
 
     if (tree_node->type == OPERATOR) {
         switch(tree_node->value.operators) {
@@ -220,6 +219,9 @@ Tree_node* DoOperatorPow(Differentiator* differentiator, Tree* tree, Tree_node* 
         TEX_POW_X_N; 
         return MUL_(cR, MUL_(POW_(cL, SUB_(cR, NUMBER_NODE_CTOR(1))), dL));
     }
+    else if (!find_in_left_node && !find_in_right_node) {
+        return NUMBER_NODE_CTOR(0);
+    }
     else {
         TEX_POW_X_X; 
         return MUL_(POW_(cL, cR), ADD_(MUL_(dR, LN_(cL)), DIV_(MUL_(cR, dL), cL)));
@@ -266,13 +268,13 @@ Status_of_finding ContainsVariable(Differentiator* differentiator, Tree_node* tr
             if (strcmp(NameOfVariable(differentiator, tree_node), variable) == 0)
                 return FIND_YES;
             return FIND_NO;
-        case NUMBER:
         case OPERATOR:
             if (ContainsVariable(differentiator, tree_node->left_node, variable) == FIND_YES ||
                 ContainsVariable(differentiator, tree_node->right_node, variable) == FIND_YES)
                     return FIND_YES;
             else
                 return FIND_NO;
+        case NUMBER:
         case WRONG_TYPE:
         default:
             return FIND_NO;
@@ -470,7 +472,7 @@ double CalculateValueOfFunction(Differentiator* differentiator, Tree_node* tree_
     assert(tree_node);
     assert(variable);
 
-    TreeHTMLDump(differentiator, tree_node, DUMP_INFO, NOT_ERROR_DUMP);
+    // TreeHTMLDump(differentiator, tree_node, DUMP_INFO, NOT_ERROR_DUMP);
 
     double value_of_function = Calculating(differentiator, tree_node);
 
@@ -559,7 +561,7 @@ Tree_status FormulaTaylora(Differentiator* differentiator, char* variable, doubl
     fprintf(differentiator->dump_info.tex_dump_file, "\\addcontentsline{toc}{section}{Разложим по формуле Тейлоррррррра}\n");
     fprintf(differentiator->dump_info.tex_dump_file, "\\end{center}\n");
 
-    fprintf(differentiator->dump_info.tex_dump_file, "Разложим по формуле Тейлора в точке $%s_0$ = %lg\\\\\n", variable, value);
+    fprintf(differentiator->dump_info.tex_dump_file, "Разложим по формуле Тейлора в точке $%s_0$ = %lg\\\\\n\\newline", variable, value);
 
     size_t cnt_tree = differentiator->array_with_trees.size;
 
@@ -598,6 +600,9 @@ Tree_status GNUPlot(Differentiator* differentiator) {
 
     double point_tangency = differentiator->array_with_variables.data[0]->value;
 
+    Intervals intervals = {};
+    AnalyzeInterval(&differentiator->buffer_with_tree, &intervals);
+
     fprintf(differentiator->dump_info.tex_dump_file, "\\newpage\\section*{Построим следы хвоста кота на бумаге}\n");
     fprintf(differentiator->dump_info.tex_dump_file, "\\addcontentsline{toc}{section}{Построим следы хвоста кота на бумаге}\n");
 
@@ -611,7 +616,7 @@ Tree_status GNUPlot(Differentiator* differentiator) {
         snprintf(image, MAX_LEN_NAME, "GNUPlot/image_%zu.png", i);
         snprintf(GNUPlot_file, MAX_LEN_NAME, "GNUPlot/graphic_%zu.plt", i); 
 
-        CreateFileWithData(differentiator, PointerOnTreeRootFromIndex(differentiator, i), data_file_name);
+        CreateFileWithData(differentiator, PointerOnTreeRootFromIndex(differentiator, i), data_file_name, &intervals);
 
         if (i == 0) {
             char data_file_2_name[MAX_LEN_NAME] = {};
@@ -620,10 +625,10 @@ Tree_status GNUPlot(Differentiator* differentiator) {
             snprintf(data_file_2_name, MAX_LEN_NAME, "GNUPlot/data_file_2_name.dat");
             snprintf(data_file_tangency_name, MAX_LEN_NAME, "GNUPlot/data_file_tangency_name.dat");
 
-            CreateFileWithData(differentiator, PointerOnTreeRoot(differentiator), data_file_2_name);
-            CreateFileWithTangency(differentiator, data_file_tangency_name, point_tangency);
+            CreateFileWithData(differentiator, PointerOnTreeRoot(differentiator), data_file_2_name, &intervals);
+            CreateFileWithTangency(differentiator, data_file_tangency_name, point_tangency, &intervals);
 
-            CreateGNUPlotFileThreeFunction(GNUPlot_file, data_file_name, data_file_2_name, data_file_tangency_name, image);
+            CreateGNUPlotFileThreeFunction(GNUPlot_file, data_file_name, data_file_2_name, data_file_tangency_name, image, &intervals);
 
             fprintf(differentiator->dump_info.tex_dump_file, "\\subsection*{Изначальные следы хвоста кота на бумаге и формула Тейлорррррра}\n");
             fprintf(differentiator->dump_info.tex_dump_file, "\\addcontentsline{toc}{subsection}{Изначальные следы хвоста кота на бумаге и формула Тейлорррррра}\n");
@@ -631,10 +636,10 @@ Tree_status GNUPlot(Differentiator* differentiator) {
             fprintf(differentiator->dump_info.tex_dump_file, "\\begin{math}\n");
             fprintf(differentiator->dump_info.tex_dump_file, "f_T(x) = ");
             PrintExpressionToTex(differentiator, PointerOnTreeRoot(differentiator), differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);
-            fprintf(differentiator->dump_info.tex_dump_file, "\n\\end{math} - \\textcolor{blue}{Формула Тейлорррррррррра}\\\\\n");
+            fprintf(differentiator->dump_info.tex_dump_file, "\n\\end{math} - \\textcolor{blue}{Формула Тейлорррррррррра в окрестности x = %lg}\\\\\n", point_tangency);
             
             fprintf(differentiator->dump_info.tex_dump_file, "\\begin{math}\n");
-            fprintf(differentiator->dump_info.tex_dump_file, "f_k(x) = %lg + (%lg) \\cdot (x - %lg)", 
+            fprintf(differentiator->dump_info.tex_dump_file, "f_k(x) = %lg + %lg \\cdot (x - %lg)", 
                                                               ValueOfTreeFromIndex(differentiator, 0), ValueOfTreeFromIndex(differentiator, 1), point_tangency); 
             fprintf(differentiator->dump_info.tex_dump_file, "\n\\end{math} - \\textcolor{red}{Касательная в точке x = %lg}\\\\\n", point_tangency);
         }
@@ -657,14 +662,52 @@ Tree_status GNUPlot(Differentiator* differentiator) {
 
         fprintf(differentiator->dump_info.tex_dump_file, "\\begin{figure}[h]\n");
         fprintf(differentiator->dump_info.tex_dump_file, "\\centering\n");
-        fprintf(differentiator->dump_info.tex_dump_file, "\\includegraphics[width=0.8\\textwidth]{%s}\n", image);
+        fprintf(differentiator->dump_info.tex_dump_file, "\\includegraphics[width=0.9\\textwidth]{%s}\n", image);
         fprintf(differentiator->dump_info.tex_dump_file, "\\end{figure}\n\\newpage\n");
     }
 
     return SUCCESS;
 }
 
-Tree_status CreateFileWithData(Differentiator* differentiator, Tree_node* tree_node, const char* data_file_name) {
+Tree_status AnalyzeInterval(char** buffer, Intervals* intervals) {
+    assert(buffer);
+
+    intervals->x_start = X_START;
+    intervals->x_end   = X_END;
+    intervals->y_start = Y_START;
+    intervals->y_end   = Y_END;
+
+    if (**buffer == 'x') {
+        (*buffer)++; // skip 'x'
+
+        GetStartEndNum(buffer, &intervals->x_start, &intervals->x_end);
+    }
+
+    while (**buffer != '\n')
+        (*buffer)++;
+    (*buffer)++; // skip '\n'
+
+    if (**buffer == 'y') {
+        (*buffer)++; // skip 'y'
+
+        GetStartEndNum(buffer, &intervals->y_start, &intervals->y_end );
+    }
+
+    return SUCCESS;
+}
+
+void GetStartEndNum(char** buffer, double* start, double* end) {
+    char temp_start[MAX_LEN_NAME] = {};
+    char temp_end[MAX_LEN_NAME] = {};
+    sscanf(*buffer, "%*s %*s %s %*s %s", temp_start, temp_end); // : from start to end
+
+    char* endptr = NULL;
+
+    *start = strtof(temp_start, &endptr);
+    *end   = strtof(temp_end, &endptr);;
+}
+
+Tree_status CreateFileWithData(Differentiator* differentiator, Tree_node* tree_node, const char* data_file_name, Intervals* intervals) {
     assert(differentiator);
     assert(tree_node);
     assert(data_file_name);
@@ -673,12 +716,10 @@ Tree_status CreateFileWithData(Differentiator* differentiator, Tree_node* tree_n
     if (data_file == NULL)
         TREE_CHECK_AND_RETURN_ERRORS(OPEN_ERROR);
 
-    double step = 0.05;
-    double left_point = 0.5;
-    int cnt_points = 60;
+    int cnt_points = (int)((intervals->x_end - intervals->x_start) / STEP);
     
     for (int i = 0; i <= cnt_points; i++) {
-        double x = left_point + i * step;
+        double x = intervals->x_start + i * STEP;
         differentiator->array_with_variables.data[0]->value = x;
 
         double y = Calculating(differentiator, tree_node);
@@ -691,7 +732,7 @@ Tree_status CreateFileWithData(Differentiator* differentiator, Tree_node* tree_n
     return SUCCESS;
 }
 
-Tree_status CreateFileWithTangency(Differentiator* differentiator, const char* data_file_tangency_name, double point_tangency) {
+Tree_status CreateFileWithTangency(Differentiator* differentiator, const char* data_file_tangency_name, double point_tangency, Intervals* intervals) {
     assert(differentiator);
     assert(data_file_tangency_name);
 
@@ -699,12 +740,10 @@ Tree_status CreateFileWithTangency(Differentiator* differentiator, const char* d
     if (data_file == NULL)
         TREE_CHECK_AND_RETURN_ERRORS(OPEN_ERROR);
 
-    double step = 0.05;
-    double left_point = 0.5;
-    int cnt_points = 60;
+    int cnt_points = (int)((intervals->x_end - intervals->x_start) / STEP);
     
     for (int i = 0; i <= cnt_points; i++) {
-        double x = left_point + i * step;
+        double x = intervals->x_start + i * STEP;
 
         double y_0 = ValueOfTreeFromIndex(differentiator, 0);
         double y_dif_0 = ValueOfTreeFromIndex(differentiator, 1);
@@ -742,7 +781,10 @@ Tree_status CreateGNUPlotFile(const char* GNUPlot_file, const char* data_file, c
     return SUCCESS;
 }
 
-Tree_status CreateGNUPlotFileThreeFunction(const char* GNUPlot_file, const char* data_file, const char* data_2_file, const char* data_file_tangency_name, const char* image) {
+Tree_status CreateGNUPlotFileThreeFunction(const char* GNUPlot_file, 
+                                           const char* data_file, const char* data_2_file, const char* data_file_tangency_name, 
+                                           const char* image,
+                                           Intervals* intervals) {
     assert(GNUPlot_file);
     assert(data_file);
     assert(data_2_file);
@@ -757,7 +799,7 @@ Tree_status CreateGNUPlotFileThreeFunction(const char* GNUPlot_file, const char*
     fprintf(file, "set terminal pngcairo size 800,600 enhanced font 'Arial,12'\n");
     fprintf(file, "set output '%s'\n", image);
     fprintf(file, "set grid\n");
-    fprintf(file, "set yrange [-3:4]\n");
+    fprintf(file, "set yrange [%lg:%lg]\n", intervals->y_start, intervals->y_end);
     fprintf(file, "unset key\n");
     fprintf(file, "plot '%s' with lines lc rgb \"purple\" linewidth 2," 
                     "\\\n '%s' with lines lc rgb \"blue\" linewidth 2," 

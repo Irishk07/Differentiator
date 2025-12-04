@@ -6,10 +6,16 @@
 
 const double EPS = 1e-10;
 
+const double X_START =  0;
+const double X_END   =  2;
+const double Y_START = -3;
+const double Y_END   =  4;
+const double STEP  = 1e-5;
+
 
 void StartDifferntiator(Differentiator* differentiator);
 
-Tree_status Differentiation(Differentiator* differentiator, char* variable);
+Tree_status Differentiation(Differentiator* differentiator, char* variable, int number);
 
 Tree_node* DifferentiationFunctions(Differentiator* differentiator, Tree_node* tree_node, const char* variable);
 
@@ -55,12 +61,19 @@ size_t Factorial(size_t n);
 
 Tree_status GNUPlot(Differentiator* differentiator);
 
-Tree_status CreateFileWithData(Differentiator* differentiator, Tree_node* tree_node, const char* data_file_name);
+Tree_status AnalyzeInterval(char** buffer, Intervals* intervals);
 
-Tree_status CreateFileWithTangency(Differentiator* differentiator, const char* data_file_tangency_name, double point_tangency);
+void GetStartEndNum(char** buffer, double* start, double* end);
+
+Tree_status CreateFileWithData(Differentiator* differentiator, Tree_node* tree_node, const char* data_file_name, Intervals* intervals);
+
+Tree_status CreateFileWithTangency(Differentiator* differentiator, const char* data_file_tangency_name, double point_tangency, Intervals* intervals);
 
 Tree_status CreateGNUPlotFile(const char* GNUPlot_file, const char* data_file, const char* image);
 
-Tree_status CreateGNUPlotFileThreeFunction(const char* GNUPlot_file, const char* data_file, const char* data_2_file, const char* data_file_tangency_name, const char* image);
+Tree_status CreateGNUPlotFileThreeFunction(const char* GNUPlot_file, 
+                                           const char* data_file, const char* data_2_file, const char* data_file_tangency_name, 
+                                           const char* image,
+                                           Intervals* intervals);
 
 #endif // DIFFRENTIATION_FUNCTIONS_H_

@@ -402,6 +402,11 @@ void PrintExpressionToTex(Differentiator* differentiator, Tree_node* tree_node, 
 
     Prioritets current_prioritet = GetPrioritet(tree_node);
 
+    // if (depth >= 3 && tree_node->type == OPERATOR && tree_node->value.operators == OPERATOR_ADD) {
+    //     depth = 0; 
+    //     fprintf(tex_dump_file, "\n");
+    // }
+
     if (current_prioritet < parent_prioritet && current_prioritet != NO_PRIORITET)
         fprintf(tex_dump_file, "(");
 

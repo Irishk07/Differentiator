@@ -30,6 +30,7 @@ Tree_node* GetComandir(Differentiator* differentiator, Tree_status* status, char
         *status = NOT_END_SYMBOL;
         return NULL;
     }
+    (*str)++;
 
     return new_node;
 }
@@ -45,6 +46,8 @@ Tree_node* GetExpression(Differentiator* differentiator, char** str, Tree_status
     while (**str == '+' || **str == '-') {
         int cur_operator = (**str);
         (*str)++;
+
+        SkipSpaces(str);
 
         Tree_node* new_node_2 = GetTerm(differentiator, str, status);
 
@@ -70,6 +73,8 @@ Tree_node* GetTerm(Differentiator* differentiator, char** str, Tree_status* stat
     while (**str == '*' || **str == '/') {
         int cur_operator = (**str);
         (*str)++;
+
+        SkipSpaces(str);
 
         Tree_node* new_node_2 = GetPow(differentiator, str, status);
         if (cur_operator == '*')
@@ -120,6 +125,8 @@ Tree_node* GetPrimaryExpression(Differentiator* differentiator, char** str, Tree
             *status = NOT_END_SKOBKA;
 
         (*str)++;
+
+        SkipSpaces(str);
     }
     else {
         tree_node = GetNumber(differentiator, str, status);
@@ -177,7 +184,6 @@ Tree_node* GetVariable(Differentiator* differentiator, char** str, Tree_status* 
     if (('a' <= **str && **str <= 'z') || **str == '_') {
         (*str)++;
 
-        SkipSpaces(str);
         while (('a' <= **str && **str <= 'z') || **str == '_' || ('0' <= **str && **str <= '9'))
             (*str)++;
 

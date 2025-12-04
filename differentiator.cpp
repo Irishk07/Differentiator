@@ -42,6 +42,7 @@ Tree_status UploadTree(Differentiator* differentiator) {
     color_printf(COLOR_PURPLE, " - Please, enter the name of the file from which the tree will be uploaded\n");
 
     char* file_name = ReadAnswer();
+    differentiator->file_with_function = file_name;
 
     if (file_name == NULL)
         color_printf(COLOR_RED, " - Sorry, I couldn't do it, I have some problems. Try later please\n");
