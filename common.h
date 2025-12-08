@@ -138,31 +138,16 @@ struct About_tree {
     double value;
 };
 
-typedef About_tree* trees_type_t;
-
 struct About_variable {
     char* name;
     double value;
 };
 
-typedef About_variable* variables_type_t;
-
-struct About_array {
-    char* data;
-    size_t size;
-    size_t capacity;
-};
-
-struct Array_with_variables {
-    variables_type_t* data = NULL;
+struct Array_with_data {
+    void* data = NULL;
     size_t size = 0;
     size_t capacity = 0;
-};
-
-struct Array_with_trees {
-    trees_type_t* data = NULL;
-    size_t size = 0;
-    size_t capacity = 0;
+    size_t elem_size;
 };
 
 struct Differentiator {
@@ -170,8 +155,8 @@ struct Differentiator {
     char* end_buffer;
     size_t size_buffer;
     char* buffer_with_tree;
-    Array_with_variables array_with_variables;
-    Array_with_trees array_with_trees;
+    Array_with_data array_with_variables;
+    Array_with_data array_with_trees;
     Dump_information dump_info;
     const char* file_with_function;
 };

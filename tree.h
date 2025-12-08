@@ -44,7 +44,11 @@ char* ReadAnswer();
 
 double ValueOfVariable(Differentiator* differentiator, Tree_node* tree_node);
 
+double ValueOfVariableFromIndex(Differentiator* differentiator, size_t index);
+
 char* NameOfVariable(Differentiator* differentiator, Tree_node* tree_node);
+
+char* NameOfVariableFromIndex(Differentiator* differentiator, size_t index);
 
 size_t IndexOfVariable(Tree_node* tree_node);
 

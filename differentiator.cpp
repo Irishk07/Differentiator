@@ -29,8 +29,20 @@ Tree_status DifferentiatorCtor(Differentiator* differentiator, const char* html_
     differentiator->dump_info.tex_dump_filename  = tex_dump_filename;
     differentiator->dump_info.directory          = directory;
 
-    TREE_CHECK_AND_RETURN_ERRORS(ArrayCtorvariables(&differentiator->array_with_variables, DEFAULT_START_CAPACITY));
-    TREE_CHECK_AND_RETURN_ERRORS(ArrayCtortrees(&differentiator->array_with_trees, DEFAULT_START_CAPACITY));
+    differentiator->array_with_variables = {};
+    ArrayCtor(&(differentiator->array_with_variables), sizeof(About_variable), DEFAULT_START_CAPACITY);
+    differentiator->array_with_trees = {};
+    ArrayCtor(&(differentiator->array_with_trees), sizeof(About_tree), DEFAULT_START_CAPACITY);
+
+    // differentiator->array_with_variables.data = (About_variable*)ArrayCtor(sizeof(About_variable), DEFAULT_START_CAPACITY, 
+    //                                                                        &differentiator->array_with_variables.capacity, &differentiator->array_with_variables.size);
+    // differentiator->array_with_variables.elem_size = sizeof(About_variable);
+    // differentiator->array_with_trees.data     = (About_tree*)ArrayCtor(sizeof(About_tree), DEFAULT_START_CAPACITY, 
+    //                                                                    &differentiator->array_with_trees.capacity, &differentiator->array_with_trees.size);
+    // differentiator->array_with_variables.elem_size = sizeof(About_tree);
+
+    // TREE_CHECK_AND_RETURN_ERRORS(ArrayCtorvariables(&differentiator->array_with_variables, DEFAULT_START_CAPACITY));
+    // TREE_CHECK_AND_RETURN_ERRORS(ArrayCtortrees(&differentiator->array_with_trees, DEFAULT_START_CAPACITY));
 
     return SUCCESS;
 }
@@ -69,16 +81,15 @@ Tree_status ReadTree(Differentiator* differentiator, const char* file_with_tree)
     differentiator->begin_buffer = differentiator->buffer_with_tree;
     differentiator->end_buffer   = differentiator->begin_buffer + differentiator->size_buffer;
 
-    About_tree* about_tree = (About_tree*)calloc(1, sizeof(About_tree));
-    about_tree->tree = (Tree*)calloc(1, sizeof(Tree));
-    ArrayPushtrees(&differentiator->array_with_trees, about_tree);
+    Tree* tree = (Tree*)calloc(1, sizeof(Tree));
+    About_tree about_tree = {.tree = tree};
+
+    ArrayPush(&(differentiator->array_with_trees), &about_tree);
+    Tree_status status = SUCCESS;
+
+    about_tree.tree->root = GetComandir(differentiator, &status, &differentiator->buffer_with_tree);
 
     Tree_node* tree_root = PointerOnTreeRoot(differentiator);
-
-    Tree_status status = SUCCESS;
-    about_tree->tree->root = GetComandir(differentiator, &status, &differentiator->buffer_with_tree);
-
-    // TREE_CHECK_AND_RETURN_ERRORS(ReadNode(differentiator, &about_tree->tree->root, &differentiator->buffer_with_tree));
 
     TREE_CHECK_AND_RETURN_ERRORS(TreeHTMLDump(differentiator, tree_root, DUMP_INFO, NOT_ERROR_DUMP));
 
@@ -109,14 +120,17 @@ Tree_status FillValueOfVariables(Differentiator* differentiator, size_t index_of
     double value = DEFAULT_VALUE;
 
     while (cnt_attempts-- > 0) {
-        color_printf(COLOR_PURPLE, " - Enter the value of %s\n", (differentiator->array_with_variables.data)[index_of_variable]->name);
+        About_variable about_variable = {};
+        ArrayGetElement(&(differentiator->array_with_variables), &about_variable, index_of_variable);
+        color_printf(COLOR_PURPLE, " - Enter the value of %s\n", about_variable.name);
 
         if (scanf("%lg%*c", &value) != 1) {
             scanf("%*[^\n]%*c");
             continue;
         }
 
-        (differentiator->array_with_variables.data)[index_of_variable]->value = value;
+        about_variable.value = value;
+        ArrayChangeElement(&(differentiator->array_with_variables), &about_variable, index_of_variable);
 
         break;
     }
@@ -268,10 +282,11 @@ Tree_status DifferentiatorDtor(Differentiator* differentiator) {
     for (size_t i = 0; i < differentiator->array_with_trees.size; ++i) {
         DifferentiatorNodeDtor(differentiator, PointerOnTreeRootFromIndex(differentiator, i));
     }
-    ArrayDtorTrees(&differentiator->array_with_trees);
+
+    ArrayDtorTrees(differentiator, &(differentiator->array_with_trees));
     free(differentiator->array_with_trees.data);
 
-    ArrayDtorVariables(&differentiator->array_with_variables);
+    ArrayDtorVariables(differentiator, &differentiator->array_with_variables);
     free(differentiator->array_with_variables.data);
 
     return status;
@@ -286,4 +301,18 @@ void DifferentiatorNodeDtor(Differentiator* differentiator, Tree_node* tree_node
     DifferentiatorNodeDtor(differentiator, tree_node->right_node);
 
     free(tree_node);
+}
+
+void ArrayDtorVariables(Differentiator* differentiator, Array_with_data* array_with_data) {
+    for (size_t i = 0; i < array_with_data->size; ++i) {
+        free(NameOfVariableFromIndex(differentiator, i));
+        // free(array_with_data->data[i]);
+    }
+}
+
+void ArrayDtorTrees(Differentiator* differentiator, Array_with_data* array_with_data) {
+    for (size_t i = 0; i < array_with_data->size; ++i) {
+        free(PointerOnTreeFromIndex(differentiator, i));
+        // free(array_with_trees->data[i]);
+    }
 }

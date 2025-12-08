@@ -36,7 +36,9 @@ void StartDifferntiator(Differentiator* differentiator) {
     int read_bytes = 0;
 
     sscanf(differentiator->buffer_with_tree, "%c, %lg, %d%n", variable, &value, &number, &read_bytes);
-    differentiator->array_with_variables.data[0]->value = value;
+    About_variable about_variable = {.name = NameOfVariableFromIndex(differentiator, 0), .value = value};
+    ArrayChangeElement(&(differentiator->array_with_variables), &about_variable , 0);
+
     differentiator->buffer_with_tree += read_bytes;
 
     Differentiation(differentiator, variable, number);
@@ -63,12 +65,10 @@ Tree_status Differentiation(Differentiator* differentiator, char* variable, int 
 
         Tree_node* old_tree_root = PointerOnTree(differentiator)->root;
 
-        About_tree* about_new_tree = (About_tree*)calloc(1, sizeof(About_tree));
-        about_new_tree->tree = (Tree*)calloc(1, sizeof(Tree));
-        if (about_new_tree == NULL)
-            TREE_CHECK_AND_RETURN_ERRORS(MEMORY_ERROR,      free(variable););
+        Tree* tree = (Tree*)calloc(1, sizeof(Tree));
+        About_tree about_new_tree = {.tree = tree};
 
-        TREE_CHECK_AND_RETURN_ERRORS(ArrayPushtrees(&differentiator->array_with_trees, about_new_tree),   free(variable););
+        TREE_CHECK_AND_RETURN_ERRORS(ArrayPush(&(differentiator->array_with_trees), &about_new_tree),   free(variable););
 
         fprintf(differentiator->dump_info.tex_dump_file, "\\begin{center}\n"
                                                          "\\section*{Промуррифицируем следующее выражение %dй раз:}\n"
@@ -79,7 +79,7 @@ Tree_status Differentiation(Differentiator* differentiator, char* variable, int 
                                                          "\\end{center}\n");
         
         fprintf(differentiator->dump_info.tex_dump_file, "\\begin{math}\n");
-        about_new_tree->tree->root = DifferentiationFunctions(differentiator, old_tree_root, variable);
+        about_new_tree.tree->root = DifferentiationFunctions(differentiator, old_tree_root, variable);
         fprintf(differentiator->dump_info.tex_dump_file, "\\end{math}\n");
 
         fprintf(differentiator->dump_info.tex_dump_file, "\\begin{center}\n");
@@ -88,15 +88,13 @@ Tree_status Differentiation(Differentiator* differentiator, char* variable, int 
         TreeTexDump(differentiator, old_tree_root, PointerOnTreeRoot(differentiator), variable);
         fprintf(differentiator->dump_info.tex_dump_file, "\\end{center}\n");
 
-        OptimizationTree(differentiator, &about_new_tree->tree->root, variable);
+        OptimizationTree(differentiator, &(about_new_tree.tree->root), variable);
 
         fprintf(differentiator->dump_info.tex_dump_file, "\\begin{center}\n");
         fprintf(differentiator->dump_info.tex_dump_file, "\\subsection*{После оптимизациии:}\n\n");
         fprintf(differentiator->dump_info.tex_dump_file, "\\addcontentsline{toc}{subsection}{После оптимизациии}\n");
         TreeTexDump(differentiator, old_tree_root, PointerOnTreeRoot(differentiator), variable);
         fprintf(differentiator->dump_info.tex_dump_file, "\\end{center}\n");
-
-        fprintf(stderr, "done\n");
     }
 
     return SUCCESS;
@@ -367,30 +365,30 @@ void OptimizationZeroNode(Differentiator* differentiator, Tree* tree, Tree_node*
 
     if (IsZeroNode(first_child)) {
         switch ((*tree_node)->value.operators) {
-                case OPERATOR_ADD:
-                case OPERATOR_SUB:
-                    {
-                        Tree_node* child = second_child;
-                        DifferentiatorNodeDtor(differentiator, first_child);
-                        free(*tree_node);
-                        (*tree_node) = child;
-                        return;
-                    }
-                case OPERATOR_MUL:
-                    {
-                        DifferentiatorNodeDtor(differentiator, (*tree_node));
-                        (*tree_node) = NUMBER_NODE_CTOR(0.0);
-                        return;
-                    }
-                case OPERATOR_POW:
-                    {
-                        DifferentiatorNodeDtor(differentiator, (*tree_node));
-                        (*tree_node) = NUMBER_NODE_CTOR(1.0);
-                        return;
-                    }
-                default:
-                    break;
+            case OPERATOR_ADD:
+            case OPERATOR_SUB:
+                {
+                    Tree_node* child = second_child;
+                    DifferentiatorNodeDtor(differentiator, first_child);
+                    free(*tree_node);
+                    (*tree_node) = child;
+                    return;
                 }
+            case OPERATOR_MUL:
+                {
+                    DifferentiatorNodeDtor(differentiator, (*tree_node));
+                    (*tree_node) = NUMBER_NODE_CTOR(0.0);
+                    return;
+                }
+            case OPERATOR_POW:
+                {
+                    DifferentiatorNodeDtor(differentiator, (*tree_node));
+                    (*tree_node) = NUMBER_NODE_CTOR(1.0);
+                    return;
+                }
+            default:
+                break;
+        }
     }
 }
 
@@ -427,10 +425,8 @@ bool IsConstantNode(Differentiator* differentiator, Tree_node* node, const char*
     switch (node->type) {
         case NUMBER:
             return true;
-            
         case VARIABLE:
             return strcmp(NameOfVariable(differentiator, node), variable) != 0;
-            
         case OPERATOR:
             return IsConstantNode(differentiator, node->left_node, variable) && 
                    IsConstantNode(differentiator, node->right_node, variable);
@@ -463,8 +459,11 @@ void CalculateValueAllFunctions(Differentiator* differentiator, char* variable, 
     fprintf(differentiator->dump_info.tex_dump_file, "\\addcontentsline{toc}{section}{Посчитаем значение функции в миске}\n");
     fprintf(differentiator->dump_info.tex_dump_file, "\\end{center}\n");
 
-    for (size_t i = 0; i < differentiator->array_with_trees.size; ++i)
-        differentiator->array_with_trees.data[i]->value = CalculateValueOfFunction(differentiator, PointerOnTreeRootFromIndex(differentiator, i), variable, value, i);
+    for (size_t i = 0; i < differentiator->array_with_trees.size; ++i) {
+        Tree* tree = PointerOnTreeFromIndex(differentiator, i);
+        About_tree about_tree = {.tree = tree, .value = CalculateValueOfFunction(differentiator, tree->root, variable, value, i)};
+        ArrayChangeElement(&(differentiator->array_with_trees), &about_tree , i);
+    }
 }
 
 double CalculateValueOfFunction(Differentiator* differentiator, Tree_node* tree_node, char* variable, double value, size_t number) {
@@ -490,10 +489,8 @@ Tree_status CreateTaylorsTree(Differentiator* differentiator, char* varible, dou
     assert(differentiator);
     assert(varible);
 
-    About_tree* about_Taylor_tree = (About_tree*)calloc(1, sizeof(About_tree));
     Tree* Taylor_tree = (Tree*)calloc(1, sizeof(Tree));
-
-    about_Taylor_tree->tree = Taylor_tree;
+    About_tree about_Taylor_tree = {.tree = Taylor_tree};
 
     Tree_node* variable_node = NodeCtor(Taylor_tree, VARIABLE, (type_t){.index_variable = 0}, NULL, NULL);
     Tree_node* value_node = NodeCtor(Taylor_tree, NUMBER, (type_t){.number = value}, NULL, NULL);
@@ -513,7 +510,7 @@ Tree_status CreateTaylorsTree(Differentiator* differentiator, char* varible, dou
     free(value_node);
     free(x_minus_x0);
 
-    ArrayPushtrees(&differentiator->array_with_trees, about_Taylor_tree);
+    ArrayPush(&(differentiator->array_with_trees), &about_Taylor_tree);
 
     TreeHTMLDump(differentiator, Taylor_tree->root, DUMP_INFO, NOT_ERROR_DUMP);
     
@@ -578,7 +575,10 @@ Tree_status FormulaTaylora(Differentiator* differentiator, char* variable, doubl
     PrintExpressionToTex(differentiator, root, differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);
     fprintf(differentiator->dump_info.tex_dump_file, "+ o((%s - %s_0)^%zu)\\\\\n", variable, variable, cnt_tree - 2);
 
-    OptimizationTree(differentiator, &(differentiator->array_with_trees.data[differentiator->array_with_trees.size - 1]->tree->root), variable);
+    OptimizationTree(differentiator, &root, variable);
+    About_tree about_tree = {.tree = PointerOnTree(differentiator), .value = ValueOfTree(differentiator)};
+    about_tree.tree->root = root;
+    ArrayChangeElement(&(differentiator->array_with_trees), &about_tree, differentiator->array_with_trees.size - 1);
 
     fprintf(differentiator->dump_info.tex_dump_file, "\\\\\nf(%s) = ", variable);
     PrintExpressionToTex(differentiator, PointerOnTreeRoot(differentiator), differentiator->dump_info.tex_dump_file, NO_PRIORITET, 0);
@@ -598,7 +598,7 @@ size_t Factorial(size_t n) {
 Tree_status GNUPlot(Differentiator* differentiator) {
     assert(differentiator);
 
-    double point_tangency = differentiator->array_with_variables.data[0]->value;
+    double point_tangency = ValueOfVariableFromIndex(differentiator, 0);
 
     Intervals intervals = {};
     AnalyzeInterval(&differentiator->buffer_with_tree, &intervals);
@@ -720,7 +720,9 @@ Tree_status CreateFileWithData(Differentiator* differentiator, Tree_node* tree_n
     
     for (int i = 0; i <= cnt_points; i++) {
         double x = intervals->x_start + i * STEP;
-        differentiator->array_with_variables.data[0]->value = x;
+
+        About_variable about_variable = {.name = NameOfVariableFromIndex(differentiator, 0), .value = x};
+        ArrayChangeElement(&(differentiator->array_with_variables), &about_variable, 0);
 
         double y = Calculating(differentiator, tree_node);
         fprintf(data_file, "%lg %lg\n", x, y);

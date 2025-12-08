@@ -28,5 +28,9 @@ Tree_status DifferentiatorDtor(Differentiator* differentiator);
 
 void DifferentiatorNodeDtor(Differentiator* differentiator, Tree_node* tree_node);
 
+void ArrayDtorVariables(Differentiator* differentiator, Array_with_data* array_with_data);
+
+void ArrayDtorTrees(Differentiator* differentiator, Array_with_data* array_with_data);
+
 
 #endif // DIFFERENTIATOR_H_

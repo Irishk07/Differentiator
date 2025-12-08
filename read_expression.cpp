@@ -198,16 +198,17 @@ Tree_node* GetVariable(Differentiator* differentiator, char** str, Tree_status* 
         }
 
         for (size_t i = 0; i < differentiator->array_with_variables.size; ++i) {
-            if (strcmp(name_variable, differentiator->array_with_variables.data[i]->name) == 0) {
+            if (strcmp(name_variable, NameOfVariableFromIndex(differentiator, i)) == 0) {
                 free(name_variable);
                 return NodeCtor(PointerOnTree(differentiator), VARIABLE, (type_t){.index_variable = (int)i}, NULL, NULL);
             }
         }
     
-        About_variable* about_variable = (About_variable*)calloc(1, sizeof(About_variable));
-        *about_variable = {.name = name_variable, .value = DEFAULT_VALUE};
+        About_variable about_variable = {.name = name_variable, .value = DEFAULT_VALUE};
 
-        ArrayPushvariables(&differentiator->array_with_variables, about_variable);
+        ArrayPush(&(differentiator->array_with_variables), &about_variable);
+
+        // ArrayPushvariables(&differentiator->array_with_variables, about_variable);
 
         return NodeCtor(PointerOnTree(differentiator), VARIABLE, (type_t){.index_variable = (int)(differentiator->array_with_variables.size) - 1}, NULL, NULL);
     }

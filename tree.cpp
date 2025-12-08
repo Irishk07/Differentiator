@@ -5,6 +5,7 @@
 
 #include "tree.h"
 
+#include "array.h"
 #include "colors.h"
 #include "common.h"
 #include "debug.h"
@@ -96,50 +97,87 @@ double ValueOfVariable(Differentiator* differentiator, Tree_node* tree_node) {
     assert(differentiator);
     assert(tree_node);
 
-    return (differentiator->array_with_variables.data)[IndexOfVariable(tree_node)]->value;
+    About_variable about_variable = {};
+    ArrayGetElement(&(differentiator->array_with_variables), &about_variable, IndexOfVariable(tree_node));
+
+    return about_variable.value;
+}
+
+double ValueOfVariableFromIndex(Differentiator* differentiator, size_t index) {
+    assert(differentiator);
+
+    About_variable about_variable = {};
+    ArrayGetElement(&(differentiator->array_with_variables), &about_variable, index);
+
+    return about_variable.value;
 }
 
 char* NameOfVariable(Differentiator* differentiator, Tree_node* tree_node) {
     assert(differentiator);
     assert(tree_node);
 
-    return (differentiator->array_with_variables.data)[IndexOfVariable(tree_node)]->name;
+    About_variable about_variable = {};
+    ArrayGetElement(&(differentiator->array_with_variables), &about_variable, IndexOfVariable(tree_node));
+
+    // fprintf(stderr, "%s: name %s\n", __func__, about_variable.name);
+
+    return about_variable.name;
+}
+
+char* NameOfVariableFromIndex(Differentiator* differentiator, size_t index) {
+    assert(differentiator);
+
+    About_variable about_variable = {};
+    ArrayGetElement(&(differentiator->array_with_variables), &about_variable, index);
+
+    // fprintf(stderr, "%s: name %s\n", __func__, about_variable.name);
+
+    return about_variable.name;
 }
 
 Tree* PointerOnTree(Differentiator* differentiator) {
     assert(differentiator);
 
-    return differentiator->array_with_trees.data[differentiator->array_with_trees.size - 1]->tree;
+    return PointerOnTreeFromIndex(differentiator, differentiator->array_with_trees.size - 1);
 }
 
 Tree* PointerOnTreeFromIndex(Differentiator* differentiator, size_t index) {
     assert(differentiator);
 
-    return differentiator->array_with_trees.data[index]->tree;
+    About_tree about_tree = {};
+    ArrayGetElement(&(differentiator->array_with_trees), &about_tree, index);
+
+    return about_tree.tree;
 }
 
 Tree_node* PointerOnTreeRoot(Differentiator* differentiator) {
     assert(differentiator);
 
-    return differentiator->array_with_trees.data[differentiator->array_with_trees.size - 1]->tree->root;
+    return PointerOnTreeRootFromIndex(differentiator, differentiator->array_with_trees.size - 1);
 }
 
 Tree_node* PointerOnTreeRootFromIndex(Differentiator* differentiator, size_t index) {
     assert(differentiator);
 
-    return differentiator->array_with_trees.data[index]->tree->root;
+    About_tree about_tree = {};
+    ArrayGetElement(&(differentiator->array_with_trees), &about_tree, index);
+
+    return about_tree.tree->root;
 }
 
 double ValueOfTree(Differentiator* differentiator) {
     assert(differentiator);
 
-    return differentiator->array_with_trees.data[differentiator->array_with_trees.size - 1]->value;
+    return ValueOfTreeFromIndex(differentiator, differentiator->array_with_trees.size - 1);
 }
 
 double ValueOfTreeFromIndex(Differentiator* differentiator, size_t index) {
     assert(differentiator);
 
-    return differentiator->array_with_trees.data[index]->value;
+    About_tree about_tree = {};
+    ArrayGetElement(&(differentiator->array_with_trees), &about_tree, index);
+
+    return about_tree.value;
 }
 
 const char* IndetifySign(Tree_node* tree_node) {
