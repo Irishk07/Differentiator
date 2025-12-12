@@ -21,15 +21,6 @@ void StartDifferntiator(Differentiator* differentiator) {
 
     differentiator->buffer_with_tree++;
 
-    // color_printf(COLOR_PURPLE, " - By which variable do you want to differentiate?\n");
-    // char* variable = ReadAnswer();
-
-    // double value = ReadDoubleNumber("Enter value of variable");
-    // for (size_t i = 0; i < differentiator->array_with_variables.size; ++i) {
-    //     if (strcmp(variable, differentiator->array_with_variables.data[i]->name) == 0)
-    //         differentiator->array_with_variables.data[i]->value = value;
-    // }
-
     char variable[MAX_LEN_NAME] = {};
     double value = 1;
     int number = 0;
@@ -676,6 +667,8 @@ Tree_status AnalyzeInterval(char** buffer, Intervals* intervals) {
     intervals->x_end   = X_END;
     intervals->y_start = Y_START;
     intervals->y_end   = Y_END;
+
+    SkipSpaces(buffer);
 
     if (**buffer == 'x') {
         (*buffer)++; // skip 'x'

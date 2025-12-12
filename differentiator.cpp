@@ -34,16 +34,6 @@ Tree_status DifferentiatorCtor(Differentiator* differentiator, const char* html_
     differentiator->array_with_trees = {};
     ArrayCtor(&(differentiator->array_with_trees), sizeof(About_tree), DEFAULT_START_CAPACITY);
 
-    // differentiator->array_with_variables.data = (About_variable*)ArrayCtor(sizeof(About_variable), DEFAULT_START_CAPACITY, 
-    //                                                                        &differentiator->array_with_variables.capacity, &differentiator->array_with_variables.size);
-    // differentiator->array_with_variables.elem_size = sizeof(About_variable);
-    // differentiator->array_with_trees.data     = (About_tree*)ArrayCtor(sizeof(About_tree), DEFAULT_START_CAPACITY, 
-    //                                                                    &differentiator->array_with_trees.capacity, &differentiator->array_with_trees.size);
-    // differentiator->array_with_variables.elem_size = sizeof(About_tree);
-
-    // TREE_CHECK_AND_RETURN_ERRORS(ArrayCtorvariables(&differentiator->array_with_variables, DEFAULT_START_CAPACITY));
-    // TREE_CHECK_AND_RETURN_ERRORS(ArrayCtortrees(&differentiator->array_with_trees, DEFAULT_START_CAPACITY));
-
     return SUCCESS;
 }
 

@@ -6,10 +6,10 @@
 
 const double EPS = 1e-10;
 
-const double X_START =  0;
-const double X_END   =  2;
-const double Y_START = -3;
-const double Y_END   =  4;
+const double X_START = -0.5;
+const double X_END   = 1.5;
+const double Y_START = -0.5;
+const double Y_END   =  1.5;
 const double STEP  = 1e-5;
 
 
